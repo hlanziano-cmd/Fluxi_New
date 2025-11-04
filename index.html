@@ -523,21 +523,23 @@
                     <table>
                         <thead>
                             <tr>
-                                <th style="width: 80px; text-align: center;">ID</th>
-                                <th style="width: 150px; text-align: center;">Cliente</th>
-                                <th style="width: 200px; text-align: center;">Dirección</th>
-                                <th style="width: 100px; text-align: center;">Total</th>
-                                <th style="width: 120px; text-align: center;">Tipo Dom.</th>
-                                <th style="width: 170px; text-align: center;">Domiciliario</th>
-                                <th style="width: 100px; text-align: center;">Datafono</th>
-                                <th style="width: 110px; text-align: center;">Estado</th>
-                                <th style="width: 90px; text-align: center;">Tiempo</th>
-                                <th style="width: 150px; text-align: center;">Acción</th>
+                                <th style="width: 70px; text-align: center;">ID</th>
+                                <th style="width: 140px; text-align: center;">Cliente</th>
+                                <th style="width: 180px; text-align: center;">Dirección</th>
+                                <th style="width: 90px; text-align: center;">Total</th>
+                                <th style="width: 110px; text-align: center;">Tipo Dom.</th>
+                                <th style="width: 150px; text-align: center;">Domiciliario</th>
+                                <th style="width: 100px; text-align: center;">Método Pago</th>
+                                <th style="width: 90px; text-align: center;">Datafono</th>
+                                <th style="width: 110px; text-align: center;">Estado Voucher</th>
+                                <th style="width: 100px; text-align: center;">Estado</th>
+                                <th style="width: 80px; text-align: center;">Tiempo</th>
+                                <th style="width: 130px; text-align: center;">Acción</th>
                             </tr>
                         </thead>
                         <tbody id="orders-table-body">
                             <tr>
-                                <td colspan="10" style="text-align: center; padding: 30px;">Cargando...</td>
+                                <td colspan="12" style="text-align: center; padding: 30px;">Cargando...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1299,22 +1301,27 @@
             tbody.innerHTML = '';
 
             if (orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 30px;">No hay pedidos</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; padding: 30px;">No hay pedidos</td></tr>';
                 return;
             }
 
             orders.forEach(order => {
+                // Verificar si el pedido está en estado final (no editable)
+                const isFinalized = order.estado === 'entregado' || order.estado === 'cancelado';
+
                 const row = tbody.insertRow();
                 row.innerHTML = `
-                    <td><strong>#${order.id.substring(0, 8)}</strong></td>
+                    <td style="text-align: center;"><strong>#${order.id.substring(0, 8)}</strong></td>
                     <td><strong>${order.cliente}</strong><br><small>${order.telefono_cliente}</small></td>
                     <td>${order.direccion}</td>
-                    <td><strong>${formatCurrency(order.valor_pedido + order.valor_domicilio)}</strong></td>
+                    <td style="text-align: center;"><strong>${formatCurrency(order.valor_pedido + order.valor_domicilio)}</strong></td>
                     <td class="tipo-cell"></td>
                     <td class="domiciliario-cell"></td>
+                    <td class="metodo-pago-cell"></td>
                     <td class="datafono-cell"></td>
-                    <td></td>
-                    <td>${order.tiempo_aceptacion ? calculateElapsedTime(order.tiempo_aceptacion) : '--'}</td>
+                    <td class="voucher-cell"></td>
+                    <td class="estado-cell"></td>
+                    <td style="text-align: center;">${order.tiempo_aceptacion ? calculateElapsedTime(order.tiempo_aceptacion) : '--'}</td>
                     <td class="actions-cell"></td>
                 `;
 
@@ -1328,7 +1335,10 @@
                     <option value="rappi">Rappi</option>
                 `;
                 tipoSelect.value = order.tipo_domiciliario || '';
-                tipoSelect.onchange = () => updateDeliveryType(order.id, tipoSelect.value, row);
+                tipoSelect.disabled = isFinalized;
+                if (!isFinalized) {
+                    tipoSelect.onchange = () => updateDeliveryType(order.id, tipoSelect.value, row);
+                }
                 row.cells[4].appendChild(tipoSelect);
 
                 // Select para domiciliario
@@ -1348,9 +1358,18 @@
                         domiciliarioSelect.appendChild(option);
                     });
                     domiciliarioSelect.value = order.domiciliario_id || '';
-                    domiciliarioSelect.onchange = () => updateDeliveryDriver(order.id, domiciliarioSelect.value);
+                    domiciliarioSelect.disabled = isFinalized;
+                    if (!isFinalized) {
+                        domiciliarioSelect.onchange = () => updateDeliveryDriver(order.id, domiciliarioSelect.value);
+                    }
                 }
                 row.cells[5].appendChild(domiciliarioSelect);
+
+                // Mostrar método de pago
+                const metodoPago = order.metodo_pago === 'efectivo' ? 'Efectivo' :
+                                   order.metodo_pago === 'tarjeta' ? 'Tarjeta' : '--';
+                row.cells[6].textContent = metodoPago;
+                row.cells[6].style.textAlign = 'center';
 
                 // Input para datafono
                 const datafonoInput = document.createElement('input');
@@ -1365,15 +1384,33 @@
                     datafonoInput.disabled = true;
                 } else {
                     datafonoInput.value = order.numero_datafono || '';
-                    datafonoInput.onblur = () => updateDatafono(order.id, datafonoInput.value);
+                    datafonoInput.disabled = isFinalized;
+                    if (!isFinalized) {
+                        datafonoInput.onblur = () => updateDatafono(order.id, datafonoInput.value);
+                    }
                 }
-                row.cells[6].appendChild(datafonoInput);
+                row.cells[7].appendChild(datafonoInput);
+
+                // Select para Estado Voucher
+                const voucherSelect = document.createElement('select');
+                voucherSelect.className = 'btn btn-small';
+                voucherSelect.style.width = '100%';
+                voucherSelect.innerHTML = `
+                    <option value="pendiente">Pendiente</option>
+                    <option value="entregado">Entregado</option>
+                `;
+                voucherSelect.value = order.estado_voucher || 'pendiente';
+                voucherSelect.disabled = isFinalized;
+                if (!isFinalized) {
+                    voucherSelect.onchange = () => updateVoucherStatus(order.id, voucherSelect.value);
+                }
+                row.cells[8].appendChild(voucherSelect);
 
                 // Badge de estado
                 const statusBadge = document.createElement('span');
                 statusBadge.className = 'status-badge status-' + order.estado;
                 statusBadge.textContent = order.estado.charAt(0).toUpperCase() + order.estado.slice(1);
-                row.cells[7].appendChild(statusBadge);
+                row.cells[9].appendChild(statusBadge);
 
                 // Crear botón dinámico Asignar/Rastrear según el estado del pedido
                 const actionBtn = document.createElement('button');
@@ -1390,7 +1427,7 @@
                     actionBtn.textContent = '✅ Asignar';
                     actionBtn.onclick = () => assignDelivery(order.id, row);
                 }
-                row.cells[9].appendChild(actionBtn);
+                row.cells[11].appendChild(actionBtn);
 
                 // Botón eliminar (solo para pedidos pendientes)
                 if (order.estado === 'pendiente') {
@@ -1398,7 +1435,7 @@
                     deleteBtn.className = 'btn btn-danger btn-small';
                     deleteBtn.textContent = '🗑️';
                     deleteBtn.onclick = () => deleteOrder(order.id);
-                    row.cells[9].appendChild(deleteBtn);
+                    row.cells[11].appendChild(deleteBtn);
                 }
             });
         }
@@ -1527,6 +1564,27 @@
                 }
             } catch (error) {
                 showAlert('orders-alert', 'error', 'Error al actualizar datafono');
+                console.error('Error:', error);
+            }
+        }
+
+        async function updateVoucherStatus(orderId, estado) {
+            try {
+                const updateData = {
+                    estado_voucher: estado,
+                    updated_at: new Date().toISOString()
+                };
+
+                await supabase.from('pedidos').update(updateData).eq('id', orderId);
+                showAlert('orders-alert', 'success', 'Estado de voucher actualizado');
+
+                // Actualizar el array local
+                const orderIndex = allOrders.findIndex(o => o.id === orderId);
+                if (orderIndex !== -1) {
+                    allOrders[orderIndex] = { ...allOrders[orderIndex], ...updateData };
+                }
+            } catch (error) {
+                showAlert('orders-alert', 'error', 'Error al actualizar estado de voucher');
                 console.error('Error:', error);
             }
         }
