@@ -498,6 +498,36 @@
                 </div>
                 <div id="map" style="height: 500px; border-radius: 8px;"></div>
             </div>
+
+            <!-- Submódulo: Gestión de Domiciliarios del Día -->
+            <div class="card" style="margin-top: 20px;">
+                <div class="card-header">
+                    <h3>📅 Gestión de Domiciliarios del Día</h3>
+                    <button class="btn btn-success" id="btn-save-daily-config">💾 Guardar Configuración</button>
+                </div>
+                <div id="daily-config-alert"></div>
+                <div class="alert alert-info" style="margin-bottom: 15px;">
+                    ℹ️ <strong>Selecciona los domiciliarios que trabajarán hoy</strong> y asigna el valor de arranque para cada uno. Solo los domiciliarios seleccionados estarán disponibles en la gestión de pedidos.
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 80px; text-align: center;">Activo Hoy</th>
+                                <th style="width: 250px; text-align: center;">Domiciliario</th>
+                                <th style="width: 150px; text-align: center;">Teléfono</th>
+                                <th style="width: 150px; text-align: center;">Estado</th>
+                                <th style="width: 200px; text-align: center;">Valor Arranque ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="daily-config-table-body">
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 30px;">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- PEDIDOS -->
@@ -921,6 +951,7 @@
         let currentTrackingOrder = null; // Para mantener el pedido que se está rastreando
         let allOrders = [];
         let allDeliveryDrivers = []; // Domiciliarios disponibles
+        let dailyDriversConfig = []; // Configuración de domiciliarios del día
         let map = null;
         let markers = {};
         let trackingMap = null;
@@ -1005,9 +1036,10 @@
                 localStorage.setItem('fluxi_active_module', moduleName);
                 
                 if (moduleName === 'domiciliarios') {
-                    setTimeout(() => { 
-                        initMap(); 
+                    setTimeout(() => {
+                        initMap();
                         loadDeliveries();
+                        loadDailyDriversConfig();
                         // Actualizar mapa cada 1 minuto
                         mapUpdateInterval = setInterval(() => {
                             loadDeliveries();
@@ -1245,9 +1277,137 @@
             }
         }
 
+        // ========== GESTIÓN DIARIA DE DOMICILIARIOS ==========
+        async function loadDailyDriversConfig() {
+            if (!supabase) return;
+            try {
+                // Cargar todos los domiciliarios
+                const { data: drivers, error: driversError } = await supabase
+                    .from('domiciliarios')
+                    .select('*')
+                    .order('nombre');
+
+                if (driversError) throw driversError;
+
+                // Cargar configuración del día actual
+                const today = new Date().toISOString().split('T')[0];
+                const { data: config, error: configError } = await supabase
+                    .from('configuracion_diaria')
+                    .select('*')
+                    .eq('fecha', today);
+
+                if (configError) throw configError;
+
+                dailyDriversConfig = config || [];
+
+                renderDailyDriversConfig(drivers);
+            } catch (error) {
+                console.error('Error al cargar configuración diaria:', error);
+                showAlert('daily-config-alert', 'error', 'Error al cargar configuración');
+            }
+        }
+
+        function renderDailyDriversConfig(drivers) {
+            const tbody = document.getElementById('daily-config-table-body');
+            tbody.innerHTML = '';
+
+            if (!drivers || drivers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;">No hay domiciliarios registrados</td></tr>';
+                return;
+            }
+
+            drivers.forEach(driver => {
+                const config = dailyDriversConfig.find(c => c.domiciliario_id === driver.id);
+                const isActive = config ? true : false;
+                const valorArranque = config ? config.valor_arranque : '';
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td style="text-align: center;">
+                        <input type="checkbox"
+                               data-driver-id="${driver.id}"
+                               class="daily-driver-checkbox"
+                               ${isActive ? 'checked' : ''}
+                               style="width: 20px; height: 20px; cursor: pointer;">
+                    </td>
+                    <td style="text-align: center;"><strong>${driver.nombre}</strong></td>
+                    <td style="text-align: center;">${driver.telefono}</td>
+                    <td style="text-align: center;">
+                        <span class="badge ${driver.estado === 'disponible' ? 'badge-success' : driver.estado === 'ocupado' ? 'badge-warning' : 'badge-danger'}">
+                            ${driver.estado.charAt(0).toUpperCase() + driver.estado.slice(1)}
+                        </span>
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="number"
+                               data-driver-id="${driver.id}"
+                               class="daily-driver-value"
+                               placeholder="0"
+                               min="0"
+                               step="1000"
+                               value="${valorArranque}"
+                               ${!isActive ? 'disabled' : ''}
+                               style="width: 150px; padding: 8px; border: 1px solid #ddd; border-radius: 5px; text-align: center;">
+                    </td>
+                `;
+
+                // Event listener para habilitar/deshabilitar el input de valor
+                const checkbox = row.querySelector('.daily-driver-checkbox');
+                const valueInput = row.querySelector('.daily-driver-value');
+
+                checkbox.addEventListener('change', () => {
+                    valueInput.disabled = !checkbox.checked;
+                    if (!checkbox.checked) {
+                        valueInput.value = '';
+                    }
+                });
+            });
+        }
+
+        async function saveDailyDriversConfig() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const checkboxes = document.querySelectorAll('.daily-driver-checkbox:checked');
+                const configData = [];
+
+                checkboxes.forEach(checkbox => {
+                    const driverId = checkbox.dataset.driverId;
+                    const valueInput = document.querySelector(`.daily-driver-value[data-driver-id="${driverId}"]`);
+                    const valor = parseInt(valueInput.value) || 0;
+
+                    configData.push({
+                        fecha: today,
+                        domiciliario_id: driverId,
+                        valor_arranque: valor,
+                        created_at: new Date().toISOString()
+                    });
+                });
+
+                // Eliminar configuración anterior del día
+                await supabase.from('configuracion_diaria').delete().eq('fecha', today);
+
+                // Insertar nueva configuración
+                if (configData.length > 0) {
+                    const { error } = await supabase.from('configuracion_diaria').insert(configData);
+                    if (error) throw error;
+                }
+
+                showAlert('daily-config-alert', 'success', `Configuración guardada: ${configData.length} domiciliario(s) activo(s)`);
+
+                // Recargar configuración
+                await loadDailyDriversConfig();
+
+                // Recargar pedidos para actualizar la lista de domiciliarios disponibles
+                await loadOrders();
+            } catch (error) {
+                console.error('Error al guardar configuración:', error);
+                showAlert('daily-config-alert', 'error', 'Error al guardar configuración');
+            }
+        }
+
         document.getElementById('btn-new-delivery').addEventListener('click', () => openDeliveryModal(null));
         document.getElementById('btn-cancel-delivery').addEventListener('click', closeDeliveryModal);
         document.getElementById('btn-refresh-map').addEventListener('click', loadDeliveries);
+        document.getElementById('btn-save-daily-config').addEventListener('click', saveDailyDriversConfig);
         document.getElementById('delivery-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDeliveryModal(); });
 
         document.getElementById('delivery-form').addEventListener('submit', async e => {
@@ -1286,9 +1446,25 @@
                 const result = await supabase.from('pedidos').select('*').order('created_at', { ascending: false });
                 allOrders = result.data || [];
 
-                // Cargar domiciliarios ordenados alfabéticamente
+                // Cargar configuración del día para filtrar domiciliarios activos
+                const today = new Date().toISOString().split('T')[0];
+                const { data: dailyConfig } = await supabase
+                    .from('configuracion_diaria')
+                    .select('domiciliario_id')
+                    .eq('fecha', today);
+
+                const activeDriverIds = dailyConfig ? dailyConfig.map(c => c.domiciliario_id) : [];
+
+                // Cargar solo domiciliarios activos del día, ordenados alfabéticamente
                 const deliveriesResult = await supabase.from('domiciliarios').select('*').order('nombre');
-                allDeliveryDrivers = deliveriesResult.data || [];
+
+                // Filtrar solo los domiciliarios activos del día
+                if (activeDriverIds.length > 0) {
+                    allDeliveryDrivers = (deliveriesResult.data || []).filter(d => activeDriverIds.includes(d.id));
+                } else {
+                    // Si no hay configuración del día, mostrar todos
+                    allDeliveryDrivers = deliveriesResult.data || [];
+                }
 
                 renderOrders(allOrders);
             } catch (error) {
