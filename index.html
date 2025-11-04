@@ -1312,17 +1312,17 @@
                 const row = tbody.insertRow();
                 row.innerHTML = `
                     <td style="text-align: center;"><strong>#${order.id.substring(0, 8)}</strong></td>
-                    <td><strong>${order.cliente}</strong><br><small>${order.telefono_cliente}</small></td>
-                    <td>${order.direccion}</td>
+                    <td style="text-align: center;"><strong>${order.cliente}</strong><br><small>${order.telefono_cliente}</small></td>
+                    <td style="text-align: center;">${order.direccion}</td>
                     <td style="text-align: center;"><strong>${formatCurrency(order.valor_pedido + order.valor_domicilio)}</strong></td>
-                    <td class="tipo-cell"></td>
-                    <td class="domiciliario-cell"></td>
-                    <td class="metodo-pago-cell"></td>
-                    <td class="datafono-cell"></td>
-                    <td class="voucher-cell"></td>
-                    <td class="estado-cell"></td>
+                    <td class="tipo-cell" style="text-align: center;"></td>
+                    <td class="domiciliario-cell" style="text-align: center;"></td>
+                    <td class="metodo-pago-cell" style="text-align: center;"></td>
+                    <td class="datafono-cell" style="text-align: center;"></td>
+                    <td class="voucher-cell" style="text-align: center;"></td>
+                    <td class="estado-cell" style="text-align: center;"></td>
                     <td style="text-align: center;">${order.tiempo_aceptacion ? calculateElapsedTime(order.tiempo_aceptacion) : '--'}</td>
-                    <td class="actions-cell"></td>
+                    <td class="actions-cell" style="text-align: center;"></td>
                 `;
 
                 // Select para tipo de domiciliario
@@ -1365,11 +1365,17 @@
                 }
                 row.cells[5].appendChild(domiciliarioSelect);
 
-                // Mostrar método de pago
-                const metodoPago = order.metodo_pago === 'efectivo' ? 'Efectivo' :
-                                   order.metodo_pago === 'tarjeta' ? 'Tarjeta' : '--';
-                row.cells[6].textContent = metodoPago;
-                row.cells[6].style.textAlign = 'center';
+                // Select para método de pago (siempre editable)
+                const metodoPagoSelect = document.createElement('select');
+                metodoPagoSelect.className = 'btn btn-small';
+                metodoPagoSelect.style.width = '100%';
+                metodoPagoSelect.innerHTML = `
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                `;
+                metodoPagoSelect.value = order.metodo_pago || 'efectivo';
+                metodoPagoSelect.onchange = () => updatePaymentMethod(order.id, metodoPagoSelect.value);
+                row.cells[6].appendChild(metodoPagoSelect);
 
                 // Input para datafono
                 const datafonoInput = document.createElement('input');
@@ -1378,6 +1384,8 @@
                 datafonoInput.style.width = '80px';
                 datafonoInput.style.padding = '4px';
                 datafonoInput.placeholder = '--';
+                datafonoInput.min = '0';
+                datafonoInput.step = '1';
 
                 if (order.tipo_domiciliario === 'rappi') {
                     datafonoInput.value = 'N/A';
@@ -1386,7 +1394,16 @@
                     datafonoInput.value = order.numero_datafono || '';
                     datafonoInput.disabled = isFinalized;
                     if (!isFinalized) {
-                        datafonoInput.onblur = () => updateDatafono(order.id, datafonoInput.value);
+                        datafonoInput.onblur = () => {
+                            // Validar que sea entero positivo
+                            const value = parseInt(datafonoInput.value);
+                            if (datafonoInput.value && (isNaN(value) || value < 0 || !Number.isInteger(parseFloat(datafonoInput.value)))) {
+                                showAlert('orders-alert', 'error', 'El datafono debe ser un número entero positivo');
+                                datafonoInput.value = order.numero_datafono || '';
+                                return;
+                            }
+                            updateDatafono(order.id, datafonoInput.value);
+                        };
                     }
                 }
                 row.cells[7].appendChild(datafonoInput);
@@ -1585,6 +1602,27 @@
                 }
             } catch (error) {
                 showAlert('orders-alert', 'error', 'Error al actualizar estado de voucher');
+                console.error('Error:', error);
+            }
+        }
+
+        async function updatePaymentMethod(orderId, metodo) {
+            try {
+                const updateData = {
+                    metodo_pago: metodo,
+                    updated_at: new Date().toISOString()
+                };
+
+                await supabase.from('pedidos').update(updateData).eq('id', orderId);
+                showAlert('orders-alert', 'success', 'Método de pago actualizado');
+
+                // Actualizar el array local
+                const orderIndex = allOrders.findIndex(o => o.id === orderId);
+                if (orderIndex !== -1) {
+                    allOrders[orderIndex] = { ...allOrders[orderIndex], ...updateData };
+                }
+            } catch (error) {
+                showAlert('orders-alert', 'error', 'Error al actualizar método de pago');
                 console.error('Error:', error);
             }
         }
