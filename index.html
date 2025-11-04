@@ -425,6 +425,7 @@
         <div class="menu-item active" data-module="usuarios">👥 Gestión de Usuarios</div>
         <div class="menu-item" data-module="domiciliarios">🏍️ Domiciliarios</div>
         <div class="menu-item" data-module="pedidos">📦 Pedidos</div>
+        <div class="menu-item" data-module="consulta">🔍 Consulta de Pedidos</div>
         <div class="menu-item" data-module="dashboard">📊 Dashboard</div>
         <div class="menu-item" data-module="configuracion">⚙️ Configuración</div>
     </div>
@@ -571,6 +572,130 @@
                         <tbody id="orders-table-body">
                             <tr>
                                 <td colspan="13" style="text-align: center; padding: 30px;">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONSULTA DE PEDIDOS -->
+        <div id="module-consulta" class="module-container">
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔍 Consulta de Pedidos</h3>
+                </div>
+                <div id="search-alert"></div>
+
+                <!-- Panel de búsqueda -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 15px;">Criterios de Búsqueda</h4>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">ID</label>
+                            <input type="text" id="search-id" placeholder="Ej: abc123..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Cliente</label>
+                            <input type="text" id="search-cliente" placeholder="Nombre del cliente" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Dirección</label>
+                            <input type="text" id="search-direccion" placeholder="Dirección" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Barrio</label>
+                            <input type="text" id="search-barrio" placeholder="Barrio" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Tipo Domiciliario</label>
+                            <select id="search-tipo-dom" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="">Todos</option>
+                                <option value="propio">Propio</option>
+                                <option value="rappi">Rappi</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Domiciliario</label>
+                            <select id="search-domiciliario" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Método Pago</label>
+                            <select id="search-metodo-pago" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="">Todos</option>
+                                <option value="efectivo">Efectivo</option>
+                                <option value="tarjeta">Tarjeta</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Datafono</label>
+                            <input type="text" id="search-datafono" placeholder="Número" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Estado Voucher</label>
+                            <select id="search-estado-voucher" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="">Todos</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="entregado">Entregado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Estado</label>
+                            <select id="search-estado" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="">Todos</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="asignado">Asignado</option>
+                                <option value="en_camino">En camino</option>
+                                <option value="entregado">Entregado</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Fecha Desde</label>
+                            <input type="date" id="search-fecha-desde" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Fecha Hasta</label>
+                            <input type="date" id="search-fecha-hasta" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" id="btn-search-orders">🔍 Buscar</button>
+                        <button class="btn btn-secondary" id="btn-clear-search">🗑️ Limpiar</button>
+                    </div>
+                </div>
+
+                <!-- Tabla de resultados -->
+                <div class="table-container">
+                    <table style="font-size: 13px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px; text-align: center; font-size: 12px;">ID</th>
+                                <th style="width: 110px; text-align: center; font-size: 12px;">Cliente</th>
+                                <th style="width: 140px; text-align: center; font-size: 12px;">Dirección</th>
+                                <th style="width: 90px; text-align: center; font-size: 12px;">Barrio</th>
+                                <th style="width: 75px; text-align: center; font-size: 12px;">Total</th>
+                                <th style="width: 90px; text-align: center; font-size: 12px;">Tipo Dom.</th>
+                                <th style="width: 120px; text-align: center; font-size: 12px;">Domiciliario</th>
+                                <th style="width: 85px; text-align: center; font-size: 12px;">M. Pago</th>
+                                <th style="width: 75px; text-align: center; font-size: 12px;">Datafono</th>
+                                <th style="width: 95px; text-align: center; font-size: 12px;">E. Voucher</th>
+                                <th style="width: 85px; text-align: center; font-size: 12px;">Estado</th>
+                                <th style="width: 100px; text-align: center; font-size: 12px;">Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="search-results-table">
+                            <tr>
+                                <td colspan="12" style="text-align: center; padding: 30px;">Utiliza los filtros de búsqueda para encontrar pedidos</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1057,6 +1182,8 @@
                         loadDashboardFilters();
                         loadDashboard();
                     }, 100);
+                } else if (moduleName === 'consulta') {
+                    setTimeout(() => loadSearchFilters(), 100);
                 }
             });
         });
@@ -2935,6 +3062,236 @@
             document.getElementById('filter-payment-method').value = '';
             loadDashboard();
         });
+
+        // ============================================
+        // MÓDULO DE CONSULTA DE PEDIDOS
+        // ============================================
+
+        /**
+         * Cargar filtros de búsqueda (domiciliarios disponibles)
+         */
+        async function loadSearchFilters() {
+            if (!supabase) return;
+            try {
+                // Cargar todos los domiciliarios (sin filtro de configuración diaria)
+                const { data: drivers, error } = await supabase
+                    .from('domiciliarios')
+                    .select('*')
+                    .order('nombre');
+
+                if (error) throw error;
+
+                const select = document.getElementById('search-delivery-person');
+                select.innerHTML = '<option value="">Todos</option>';
+
+                drivers.forEach(driver => {
+                    const option = document.createElement('option');
+                    option.value = driver.id;
+                    option.textContent = driver.nombre;
+                    select.appendChild(option);
+                });
+
+                console.log('✅ Filtros de búsqueda cargados');
+            } catch (error) {
+                console.error('❌ Error al cargar filtros:', error);
+            }
+        }
+
+        /**
+         * Buscar pedidos con criterios múltiples
+         */
+        async function searchOrders() {
+            if (!supabase) return;
+
+            try {
+                // Obtener valores de búsqueda
+                const searchId = document.getElementById('search-id').value.trim().toLowerCase();
+                const searchCliente = document.getElementById('search-cliente').value.trim().toLowerCase();
+                const searchDireccion = document.getElementById('search-direccion').value.trim().toLowerCase();
+                const searchBarrio = document.getElementById('search-barrio').value.trim().toLowerCase();
+                const searchTipoDom = document.getElementById('search-tipo-dom').value;
+                const searchDomiciliario = document.getElementById('search-delivery-person').value;
+                const searchMetodoPago = document.getElementById('search-metodo-pago').value;
+                const searchDatafono = document.getElementById('search-datafono').value.trim();
+                const searchEstadoVoucher = document.getElementById('search-estado-voucher').value;
+                const searchEstado = document.getElementById('search-estado').value;
+                const searchFechaDesde = document.getElementById('search-fecha-desde').value;
+                const searchFechaHasta = document.getElementById('search-fecha-hasta').value;
+
+                // Obtener todos los pedidos
+                const { data: allOrders, error } = await supabase
+                    .from('pedidos')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                // Aplicar filtros
+                let filteredOrders = allOrders;
+
+                if (searchId) {
+                    filteredOrders = filteredOrders.filter(o =>
+                        o.id.toLowerCase().includes(searchId)
+                    );
+                }
+
+                if (searchCliente) {
+                    filteredOrders = filteredOrders.filter(o =>
+                        o.cliente.toLowerCase().includes(searchCliente)
+                    );
+                }
+
+                if (searchDireccion) {
+                    filteredOrders = filteredOrders.filter(o =>
+                        o.direccion.toLowerCase().includes(searchDireccion)
+                    );
+                }
+
+                if (searchBarrio) {
+                    filteredOrders = filteredOrders.filter(o =>
+                        o.barrio && o.barrio.toLowerCase().includes(searchBarrio)
+                    );
+                }
+
+                if (searchTipoDom) {
+                    filteredOrders = filteredOrders.filter(o =>
+                        o.tipo_domiciliario === searchTipoDom
+                    );
+                }
+
+                if (searchDomiciliario) {
+                    filteredOrders = filteredOrders.filter(o =>
+                        o.domiciliario_id === searchDomiciliario
+                    );
+                }
+
+                if (searchMetodoPago) {
+                    filteredOrders = filteredOrders.filter(o =>
+                        o.metodo_pago === searchMetodoPago
+                    );
+                }
+
+                if (searchDatafono) {
+                    filteredOrders = filteredOrders.filter(o =>
+                        o.numero_datafono && o.numero_datafono.toString().includes(searchDatafono)
+                    );
+                }
+
+                if (searchEstadoVoucher) {
+                    filteredOrders = filteredOrders.filter(o =>
+                        o.estado_voucher === searchEstadoVoucher
+                    );
+                }
+
+                if (searchEstado) {
+                    filteredOrders = filteredOrders.filter(o =>
+                        o.estado === searchEstado
+                    );
+                }
+
+                if (searchFechaDesde) {
+                    const fechaDesde = new Date(searchFechaDesde);
+                    fechaDesde.setHours(0, 0, 0, 0);
+                    filteredOrders = filteredOrders.filter(o =>
+                        new Date(o.created_at) >= fechaDesde
+                    );
+                }
+
+                if (searchFechaHasta) {
+                    const fechaHasta = new Date(searchFechaHasta);
+                    fechaHasta.setHours(23, 59, 59, 999);
+                    filteredOrders = filteredOrders.filter(o =>
+                        new Date(o.created_at) <= fechaHasta
+                    );
+                }
+
+                // Renderizar resultados
+                renderSearchResults(filteredOrders);
+
+                // Mostrar mensaje de resultados
+                if (filteredOrders.length === 0) {
+                    showAlert('search-alert', 'warning', 'No se encontraron pedidos con los criterios especificados');
+                } else {
+                    showAlert('search-alert', 'success', `Se encontraron ${filteredOrders.length} pedido(s)`);
+                }
+
+            } catch (error) {
+                console.error('❌ Error al buscar pedidos:', error);
+                showAlert('search-alert', 'error', 'Error al realizar la búsqueda');
+            }
+        }
+
+        /**
+         * Renderizar resultados de búsqueda
+         */
+        function renderSearchResults(orders) {
+            const tbody = document.getElementById('search-results-table');
+            tbody.innerHTML = '';
+
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; padding: 30px;">No se encontraron pedidos</td></tr>';
+                return;
+            }
+
+            orders.forEach(order => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td style="text-align: center;"><strong>#${order.id.substring(0, 8)}</strong></td>
+                    <td style="text-align: center;"><strong>${order.cliente}</strong><br><small style="font-size: 11px;">${order.telefono_cliente}</small></td>
+                    <td style="text-align: center; font-size: 12px;">${order.direccion}</td>
+                    <td style="text-align: center; font-size: 12px;">${order.barrio || '--'}</td>
+                    <td style="text-align: center;"><strong>${formatCurrency(order.valor_pedido + order.valor_domicilio)}</strong></td>
+                    <td style="text-align: center;">${order.tipo_domiciliario ? (order.tipo_domiciliario === 'propio' ? 'Propio' : 'Rappi') : '--'}</td>
+                    <td style="text-align: center;">${order.domiciliario_nombre || '--'}</td>
+                    <td style="text-align: center;">${order.metodo_pago === 'efectivo' ? 'Efectivo' : order.metodo_pago === 'tarjeta' ? 'Tarjeta' : '--'}</td>
+                    <td style="text-align: center;">${order.numero_datafono || '--'}</td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align: center;">${order.tiempo_aceptacion ? calculateElapsedTime(order.tiempo_aceptacion) : '--'}</td>
+                `;
+
+                // Estado Voucher
+                const voucherBadge = document.createElement('span');
+                voucherBadge.className = 'badge ' + (order.estado_voucher === 'entregado' ? 'badge-success' : 'badge-warning');
+                voucherBadge.textContent = order.estado_voucher === 'entregado' ? 'Entregado' : 'Pendiente';
+                row.cells[9].appendChild(voucherBadge);
+
+                // Estado
+                const statusBadge = document.createElement('span');
+                statusBadge.className = 'status-badge status-' + order.estado;
+                statusBadge.textContent = order.estado.charAt(0).toUpperCase() + order.estado.slice(1);
+                row.cells[10].appendChild(statusBadge);
+            });
+        }
+
+        /**
+         * Limpiar filtros de búsqueda
+         */
+        function clearSearchFilters() {
+            document.getElementById('search-id').value = '';
+            document.getElementById('search-cliente').value = '';
+            document.getElementById('search-direccion').value = '';
+            document.getElementById('search-barrio').value = '';
+            document.getElementById('search-tipo-dom').value = '';
+            document.getElementById('search-delivery-person').value = '';
+            document.getElementById('search-metodo-pago').value = '';
+            document.getElementById('search-datafono').value = '';
+            document.getElementById('search-estado-voucher').value = '';
+            document.getElementById('search-estado').value = '';
+            document.getElementById('search-fecha-desde').value = '';
+            document.getElementById('search-fecha-hasta').value = '';
+
+            // Limpiar resultados
+            const tbody = document.getElementById('search-results-table');
+            tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; padding: 30px;">Utiliza los filtros de búsqueda para encontrar pedidos</td></tr>';
+
+            // Limpiar alerta
+            document.getElementById('search-alert').innerHTML = '';
+        }
+
+        // Event listeners para Consulta de Pedidos
+        document.getElementById('btn-search-orders').addEventListener('click', searchOrders);
+        document.getElementById('btn-clear-search').addEventListener('click', clearSearchFilters);
 
         loadUsers();
         
