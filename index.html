@@ -879,6 +879,29 @@
                 </div>
 
                 <div class="card" style="margin-top: 20px;">
+                    <h4 style="margin-bottom: 15px;">⏰ Hora de Reinicio Diario</h4>
+                    <div id="config-alert"></div>
+                    <p style="margin-bottom: 15px; color: #666;">
+                        Configura la hora a partir de la cual la tabla de gestión de pedidos mostrará solo los pedidos nuevos del día.
+                        Los pedidos anteriores a esta hora no se mostrarán en la tabla.
+                    </p>
+                    <div style="display: flex; gap: 15px; align-items: flex-end;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label>Hora de Reinicio (Hora Colombia) *</label>
+                            <input type="time" id="config-reset-time" value="08:00" required
+                                   style="padding: 10px; font-size: 16px;">
+                            <small style="color: #666; display: block; margin-top: 5px;">
+                                Ejemplo: 08:00 para las 8:00 AM
+                            </small>
+                        </div>
+                        <button type="button" class="btn btn-success" id="btn-save-reset-time"
+                                style="padding: 12px 24px;">
+                            💾 Guardar Configuración
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 20px;">
                     <h4 style="margin-bottom: 15px;">📋 Instrucciones</h4>
                     <ol style="line-height: 2;">
                         <li>Crea domiciliarios en el módulo correspondiente</li>
@@ -1184,6 +1207,8 @@
                     }, 100);
                 } else if (moduleName === 'consulta') {
                     setTimeout(() => loadSearchFilters(), 100);
+                } else if (moduleName === 'configuracion') {
+                    setTimeout(() => loadGeneralConfig(), 100);
                 }
             });
         });
@@ -1577,9 +1602,20 @@
         async function loadOrders() {
             if (!supabase) return;
             try {
-                // Cargar pedidos
-                const result = await supabase.from('pedidos').select('*').order('created_at', { ascending: false });
+                // Obtener timestamp de reinicio del día
+                const resetTimestamp = await getTodayResetTimestamp();
+
+                // Cargar pedidos desde la hora de reinicio
+                let query = supabase.from('pedidos').select('*');
+
+                if (resetTimestamp) {
+                    query = query.gte('created_at', resetTimestamp);
+                }
+
+                const result = await query.order('created_at', { ascending: false });
                 allOrders = result.data || [];
+
+                console.log(`📦 Pedidos cargados desde ${resetTimestamp ? new Date(resetTimestamp).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : 'siempre'}: ${allOrders.length} pedido(s)`);
 
                 // Cargar configuración del día para filtrar domiciliarios activos
                 const today = new Date().toISOString().split('T')[0];
@@ -3292,6 +3328,163 @@
         // Event listeners para Consulta de Pedidos
         document.getElementById('btn-search-orders').addEventListener('click', searchOrders);
         document.getElementById('btn-clear-search').addEventListener('click', clearSearchFilters);
+
+        // ============================================
+        // CONFIGURACIÓN GENERAL
+        // ============================================
+
+        /**
+         * Cargar configuración general
+         */
+        async function loadGeneralConfig() {
+            if (!supabase) return;
+            try {
+                const { data, error } = await supabase
+                    .from('configuracion_general')
+                    .select('*')
+                    .single();
+
+                if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+                    throw error;
+                }
+
+                if (data && data.hora_reinicio) {
+                    document.getElementById('config-reset-time').value = data.hora_reinicio;
+                    console.log('✅ Configuración cargada:', data.hora_reinicio);
+                } else {
+                    // Si no hay configuración, crear con valores por defecto
+                    await createDefaultConfig();
+                }
+            } catch (error) {
+                console.error('❌ Error al cargar configuración:', error);
+            }
+        }
+
+        /**
+         * Crear configuración por defecto
+         */
+        async function createDefaultConfig() {
+            if (!supabase) return;
+            try {
+                const { error } = await supabase
+                    .from('configuracion_general')
+                    .insert({
+                        hora_reinicio: '08:00',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    });
+
+                if (error) throw error;
+                console.log('✅ Configuración por defecto creada');
+            } catch (error) {
+                console.error('❌ Error al crear configuración por defecto:', error);
+            }
+        }
+
+        /**
+         * Guardar hora de reinicio
+         */
+        async function saveResetTime() {
+            if (!supabase) return;
+            try {
+                const resetTime = document.getElementById('config-reset-time').value;
+
+                if (!resetTime) {
+                    showAlert('config-alert', 'error', 'Debe ingresar una hora de reinicio');
+                    return;
+                }
+
+                // Verificar si ya existe configuración
+                const { data: existing } = await supabase
+                    .from('configuracion_general')
+                    .select('id')
+                    .single();
+
+                if (existing) {
+                    // Actualizar configuración existente
+                    const { error } = await supabase
+                        .from('configuracion_general')
+                        .update({
+                            hora_reinicio: resetTime,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', existing.id);
+
+                    if (error) throw error;
+                } else {
+                    // Crear nueva configuración
+                    const { error } = await supabase
+                        .from('configuracion_general')
+                        .insert({
+                            hora_reinicio: resetTime,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        });
+
+                    if (error) throw error;
+                }
+
+                showAlert('config-alert', 'success', `Hora de reinicio guardada: ${resetTime} (Hora Colombia)`);
+                console.log('✅ Hora de reinicio guardada:', resetTime);
+
+                // Recargar pedidos para aplicar el nuevo filtro
+                if (document.querySelector('.menu-item[data-module="pedidos"]').classList.contains('active')) {
+                    await loadOrders();
+                }
+            } catch (error) {
+                console.error('❌ Error al guardar hora de reinicio:', error);
+                showAlert('config-alert', 'error', 'Error al guardar configuración: ' + error.message);
+            }
+        }
+
+        /**
+         * Obtener timestamp de reinicio del día actual en hora Colombia
+         */
+        async function getTodayResetTimestamp() {
+            if (!supabase) return null;
+
+            try {
+                const { data, error } = await supabase
+                    .from('configuracion_general')
+                    .select('hora_reinicio')
+                    .single();
+
+                if (error || !data) {
+                    // Si no hay configuración, usar 08:00 por defecto
+                    return getTodayResetTimestampFromTime('08:00');
+                }
+
+                return getTodayResetTimestampFromTime(data.hora_reinicio);
+            } catch (error) {
+                console.error('❌ Error al obtener timestamp de reinicio:', error);
+                return getTodayResetTimestampFromTime('08:00');
+            }
+        }
+
+        /**
+         * Calcular timestamp de reinicio para una hora específica
+         */
+        function getTodayResetTimestampFromTime(timeString) {
+            // Crear fecha en hora Colombia (UTC-5)
+            const now = new Date();
+            const colombiaOffset = -5; // UTC-5
+            const localOffset = now.getTimezoneOffset() / 60; // offset local en horas
+
+            // Ajustar a hora Colombia
+            const colombiaTime = new Date(now.getTime() + (localOffset + Math.abs(colombiaOffset)) * 60 * 60 * 1000);
+
+            // Extraer hora y minuto de la configuración
+            const [hours, minutes] = timeString.split(':').map(Number);
+
+            // Crear timestamp del reinicio de hoy en hora Colombia
+            const resetDate = new Date(colombiaTime);
+            resetDate.setHours(hours, minutes, 0, 0);
+
+            return resetDate.toISOString();
+        }
+
+        // Event listener para guardar hora de reinicio
+        document.getElementById('btn-save-reset-time').addEventListener('click', saveResetTime);
 
         loadUsers();
         
