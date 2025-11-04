@@ -426,7 +426,7 @@
         <div class="menu-item" data-module="domiciliarios">🏍️ Domiciliarios</div>
         <div class="menu-item" data-module="pedidos">📦 Pedidos</div>
         <div class="menu-item" data-module="consulta">🔍 Consulta de Pedidos</div>
-        <div class="menu-item" data-module="dashboard">📊 Dashboard</div>
+        <div class="menu-item" data-module="dashboard">📊 Reportes</div>
         <div class="menu-item" data-module="configuracion">⚙️ Configuración</div>
     </div>
 
@@ -738,12 +738,12 @@
             </div>
         </div>
 
-        <!-- DASHBOARD -->
+        <!-- REPORTES -->
         <div id="module-dashboard" class="module-container">
             <!-- Panel de Filtros -->
             <div class="card" style="margin-bottom: 20px;">
                 <div class="card-header">
-                    <h3>🔍 Filtros de Dashboard</h3>
+                    <h3>📊 Filtros de Reportes</h3>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
                     <div class="form-group" style="margin-bottom: 0;">
@@ -780,6 +780,25 @@
                             <option value="">Todos</option>
                             <option value="efectivo">Efectivo</option>
                             <option value="tarjeta">Tarjeta</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Estado Voucher</label>
+                        <select id="filter-voucher-status" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                            <option value="">Todos</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="entregado">Entregado</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Estado Pedido</label>
+                        <select id="filter-order-status" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                            <option value="">Todos</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="asignado">Asignado</option>
+                            <option value="en_camino">En Camino</option>
+                            <option value="entregado">Entregado</option>
+                            <option value="cancelado">Cancelado</option>
                         </select>
                     </div>
                 </div>
@@ -2829,27 +2848,29 @@
             const deliveryPerson = document.getElementById('filter-delivery-person').value;
             const dataphone = document.getElementById('filter-dataphone').value;
             const paymentMethod = document.getElementById('filter-payment-method').value;
-            
+            const voucherStatus = document.getElementById('filter-voucher-status').value;
+            const orderStatus = document.getElementById('filter-order-status').value;
+
             let filtered = orders;
-            
+
             // Filtro por rango de fechas
             if (dateFrom) {
                 const fromDate = new Date(dateFrom);
                 fromDate.setHours(0, 0, 0, 0);
                 filtered = filtered.filter(o => new Date(o.created_at) >= fromDate);
             }
-            
+
             if (dateTo) {
                 const toDate = new Date(dateTo);
                 toDate.setHours(23, 59, 59, 999);
                 filtered = filtered.filter(o => new Date(o.created_at) <= toDate);
             }
-            
+
             // Filtro por tipo de domiciliario
             if (deliveryType) {
                 filtered = filtered.filter(o => o.tipo_domiciliario === deliveryType);
             }
-            
+
             // Filtro por domiciliario
             if (deliveryPerson) {
                 if (deliveryPerson === 'rappi') {
@@ -2858,17 +2879,27 @@
                     filtered = filtered.filter(o => o.domiciliario_id === deliveryPerson);
                 }
             }
-            
+
             // Filtro por datafono
             if (dataphone) {
                 filtered = filtered.filter(o => o.numero_datafono == dataphone);
             }
-            
+
             // Filtro por método de pago
             if (paymentMethod) {
                 filtered = filtered.filter(o => o.metodo_pago === paymentMethod);
             }
-            
+
+            // Filtro por estado de voucher
+            if (voucherStatus) {
+                filtered = filtered.filter(o => o.estado_voucher === voucherStatus);
+            }
+
+            // Filtro por estado de pedido
+            if (orderStatus) {
+                filtered = filtered.filter(o => o.estado === orderStatus);
+            }
+
             return filtered;
         }
         
@@ -3126,7 +3157,7 @@
                     const date = new Date();
                     date.setDate(date.getDate() - i);
                     const key = date.toISOString().split('T')[0];
-                    const label = date.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric' });
+                    const label = date.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
                     days.push({ key, label });
                     incomeByDay[key] = 0;
                 }
@@ -3241,6 +3272,8 @@
             document.getElementById('filter-delivery-person').value = '';
             document.getElementById('filter-dataphone').value = '';
             document.getElementById('filter-payment-method').value = '';
+            document.getElementById('filter-voucher-status').value = '';
+            document.getElementById('filter-order-status').value = '';
             loadDashboard();
         });
 
