@@ -539,6 +539,41 @@
                     <button class="btn btn-primary" id="btn-new-order">+ Nuevo Pedido</button>
                 </div>
                 <div id="orders-alert"></div>
+
+                <!-- Indicador de Fecha del Día -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            padding: 15px 20px;
+                            border-radius: 10px;
+                            margin-bottom: 20px;
+                            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">📅</span>
+                            <div>
+                                <div style="color: white; font-size: 14px; font-weight: 600; margin-bottom: 3px;">
+                                    Pedidos del Día
+                                </div>
+                                <div id="orders-date-display" style="color: rgba(255, 255, 255, 0.95); font-size: 18px; font-weight: 700;">
+                                    Cargando...
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="background: rgba(255, 255, 255, 0.2);
+                                        padding: 8px 15px;
+                                        border-radius: 8px;
+                                        backdrop-filter: blur(10px);">
+                                <div style="color: rgba(255, 255, 255, 0.9); font-size: 11px; margin-bottom: 2px;">
+                                    Reinicio a las
+                                </div>
+                                <div id="orders-reset-time-display" style="color: white; font-size: 15px; font-weight: 700;">
+                                    08:00 AM
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
                     <select id="filter-status" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
                         <option value="">Todos los estados</option>
@@ -1178,6 +1213,10 @@
                     clearInterval(trackingUpdateInterval);
                     trackingUpdateInterval = null;
                 }
+                if (ordersAutoReloadInterval) {
+                    clearTimeout(ordersAutoReloadInterval);
+                    ordersAutoReloadInterval = null;
+                }
 
                 document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
                 document.querySelectorAll('.module-container').forEach(m => m.classList.remove('active'));
@@ -1599,6 +1638,8 @@
         });
 
         // ========== PEDIDOS ==========
+        let ordersAutoReloadInterval = null;
+
         async function loadOrders() {
             if (!supabase) return;
             try {
@@ -1616,6 +1657,9 @@
                 allOrders = result.data || [];
 
                 console.log(`📦 Pedidos cargados desde ${resetTimestamp ? new Date(resetTimestamp).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : 'siempre'}: ${allOrders.length} pedido(s)`);
+
+                // Actualizar indicador de fecha
+                await updateOrdersDateDisplay();
 
                 // Cargar configuración del día para filtrar domiciliarios activos
                 const today = new Date().toISOString().split('T')[0];
@@ -1638,8 +1682,109 @@
                 }
 
                 renderOrders(allOrders);
+
+                // Configurar auto-reload para el próximo reinicio
+                setupAutoReload();
             } catch (error) {
                 console.error('Error:', error);
+            }
+        }
+
+        /**
+         * Actualizar indicador de fecha y hora de reinicio
+         */
+        async function updateOrdersDateDisplay() {
+            try {
+                // Obtener fecha actual en hora Colombia
+                const nowUTC = new Date();
+                const colombiaOffsetMs = -5 * 60 * 60 * 1000;
+                const nowColombia = new Date(nowUTC.getTime() + colombiaOffsetMs);
+
+                // Formatear fecha para mostrar
+                const options = {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                };
+                const dateString = nowColombia.toLocaleDateString('es-CO', options);
+
+                // Capitalizar primera letra
+                const formattedDate = dateString.charAt(0).toUpperCase() + dateString.slice(1);
+
+                // Actualizar display de fecha
+                const dateDisplay = document.getElementById('orders-date-display');
+                if (dateDisplay) {
+                    dateDisplay.textContent = formattedDate;
+                }
+
+                // Obtener y mostrar hora de reinicio configurada
+                const { data, error } = await supabase
+                    .from('configuracion_general')
+                    .select('hora_reinicio')
+                    .single();
+
+                if (!error && data) {
+                    const resetTime = data.hora_reinicio;
+                    const [hours, minutes] = resetTime.split(':');
+                    const hour12 = parseInt(hours) > 12 ? parseInt(hours) - 12 : parseInt(hours);
+                    const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
+                    const formattedTime = `${hour12 === 0 ? 12 : hour12}:${minutes} ${ampm}`;
+
+                    const resetTimeDisplay = document.getElementById('orders-reset-time-display');
+                    if (resetTimeDisplay) {
+                        resetTimeDisplay.textContent = formattedTime;
+                    }
+                }
+            } catch (error) {
+                console.error('Error al actualizar display de fecha:', error);
+            }
+        }
+
+        /**
+         * Configurar auto-reload para el próximo reinicio
+         */
+        async function setupAutoReload() {
+            // Limpiar interval anterior si existe
+            if (ordersAutoReloadInterval) {
+                clearInterval(ordersAutoReloadInterval);
+            }
+
+            try {
+                // Obtener hora de reinicio configurada
+                const { data, error } = await supabase
+                    .from('configuracion_general')
+                    .select('hora_reinicio')
+                    .single();
+
+                const resetTime = (data && data.hora_reinicio) ? data.hora_reinicio : '08:00';
+                const [hours, minutes] = resetTime.split(':').map(Number);
+
+                // Calcular próximo reinicio
+                const nowUTC = new Date();
+                const colombiaOffsetMs = -5 * 60 * 60 * 1000;
+                const nowColombia = new Date(nowUTC.getTime() + colombiaOffsetMs);
+
+                const nextResetColombia = new Date(nowColombia);
+                nextResetColombia.setHours(hours, minutes, 0, 0);
+
+                // Si ya pasó la hora de hoy, programar para mañana
+                if (nextResetColombia <= nowColombia) {
+                    nextResetColombia.setDate(nextResetColombia.getDate() + 1);
+                }
+
+                const timeUntilReset = nextResetColombia.getTime() - nowColombia.getTime();
+
+                console.log(`⏰ Próximo reinicio automático en: ${Math.floor(timeUntilReset / 1000 / 60)} minutos`);
+
+                // Configurar timer para recargar automáticamente
+                ordersAutoReloadInterval = setTimeout(async () => {
+                    console.log('🔄 Reinicio automático de pedidos...');
+                    await loadOrders();
+                }, timeUntilReset);
+
+            } catch (error) {
+                console.error('Error al configurar auto-reload:', error);
             }
         }
 
@@ -3463,24 +3608,31 @@
 
         /**
          * Calcular timestamp de reinicio para una hora específica
+         * Retorna el timestamp del reinicio del DÍA ACTUAL en hora Colombia
          */
         function getTodayResetTimestampFromTime(timeString) {
-            // Crear fecha en hora Colombia (UTC-5)
-            const now = new Date();
-            const colombiaOffset = -5; // UTC-5
-            const localOffset = now.getTimezoneOffset() / 60; // offset local en horas
-
-            // Ajustar a hora Colombia
-            const colombiaTime = new Date(now.getTime() + (localOffset + Math.abs(colombiaOffset)) * 60 * 60 * 1000);
+            // Obtener hora actual en Colombia
+            const nowUTC = new Date();
+            const colombiaOffsetMs = -5 * 60 * 60 * 1000; // UTC-5 en milisegundos
+            const nowColombia = new Date(nowUTC.getTime() + colombiaOffsetMs);
 
             // Extraer hora y minuto de la configuración
             const [hours, minutes] = timeString.split(':').map(Number);
 
-            // Crear timestamp del reinicio de hoy en hora Colombia
-            const resetDate = new Date(colombiaTime);
-            resetDate.setHours(hours, minutes, 0, 0);
+            // Crear timestamp del reinicio de HOY en hora Colombia
+            const resetDateColombia = new Date(nowColombia);
+            resetDateColombia.setHours(hours, minutes, 0, 0);
 
-            return resetDate.toISOString();
+            // Convertir de vuelta a UTC para almacenar en base de datos
+            const resetDateUTC = new Date(resetDateColombia.getTime() - colombiaOffsetMs);
+
+            console.log(`⏰ Hora de reinicio calculada:`, {
+                horaConfiguracion: timeString,
+                reinicioHoraColombia: resetDateColombia.toISOString(),
+                reinicioUTC: resetDateUTC.toISOString()
+            });
+
+            return resetDateUTC.toISOString();
         }
 
         // Event listener para guardar hora de reinicio
