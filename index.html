@@ -2953,14 +2953,12 @@
 
             // Filtro por rango de fechas
             if (dateFrom) {
-                const fromDate = new Date(dateFrom);
-                fromDate.setHours(0, 0, 0, 0);
+                const fromDate = new Date(dateFrom + 'T00:00:00');
                 filtered = filtered.filter(o => new Date(o.created_at) >= fromDate);
             }
 
             if (dateTo) {
-                const toDate = new Date(dateTo);
-                toDate.setHours(23, 59, 59, 999);
+                const toDate = new Date(dateTo + 'T23:59:59');
                 filtered = filtered.filter(o => new Date(o.created_at) <= toDate);
             }
 
