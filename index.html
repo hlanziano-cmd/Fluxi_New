@@ -3416,6 +3416,21 @@
             if (!supabase) return;
 
             try {
+                // Verificar que todos los elementos existen
+                const requiredFields = [
+                    'search-id', 'search-cliente', 'search-direccion', 'search-barrio',
+                    'search-tipo-dom', 'search-delivery-person', 'search-metodo-pago',
+                    'search-datafono', 'search-estado-voucher', 'search-estado',
+                    'search-fecha-desde', 'search-fecha-hasta'
+                ];
+
+                const missingFields = requiredFields.filter(id => !document.getElementById(id));
+                if (missingFields.length > 0) {
+                    console.error('Campos faltantes en el formulario:', missingFields);
+                    showAlert('search-alert', 'error', `Error: Faltan campos en el formulario (${missingFields.join(', ')}). Recarga la página.`);
+                    return;
+                }
+
                 // Obtener valores de búsqueda con validación
                 const searchId = document.getElementById('search-id')?.value?.trim()?.toLowerCase() || '';
                 const searchCliente = document.getElementById('search-cliente')?.value?.trim()?.toLowerCase() || '';
@@ -3588,25 +3603,32 @@
          * Limpiar filtros de búsqueda
          */
         function clearSearchFilters() {
-            document.getElementById('search-id').value = '';
-            document.getElementById('search-cliente').value = '';
-            document.getElementById('search-direccion').value = '';
-            document.getElementById('search-barrio').value = '';
-            document.getElementById('search-tipo-dom').value = '';
-            document.getElementById('search-delivery-person').value = '';
-            document.getElementById('search-metodo-pago').value = '';
-            document.getElementById('search-datafono').value = '';
-            document.getElementById('search-estado-voucher').value = '';
-            document.getElementById('search-estado').value = '';
-            document.getElementById('search-fecha-desde').value = '';
-            document.getElementById('search-fecha-hasta').value = '';
+            // Limpiar campos con validación
+            const fields = [
+                'search-id', 'search-cliente', 'search-direccion', 'search-barrio',
+                'search-tipo-dom', 'search-delivery-person', 'search-metodo-pago',
+                'search-datafono', 'search-estado-voucher', 'search-estado',
+                'search-fecha-desde', 'search-fecha-hasta'
+            ];
+
+            fields.forEach(fieldId => {
+                const element = document.getElementById(fieldId);
+                if (element) {
+                    element.value = '';
+                }
+            });
 
             // Limpiar resultados
             const tbody = document.getElementById('search-results-table');
-            tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; padding: 30px;">Utiliza los filtros de búsqueda para encontrar pedidos</td></tr>';
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; padding: 30px;">Utiliza los filtros de búsqueda para encontrar pedidos</td></tr>';
+            }
 
             // Limpiar alerta
-            document.getElementById('search-alert').innerHTML = '';
+            const alert = document.getElementById('search-alert');
+            if (alert) {
+                alert.innerHTML = '';
+            }
         }
 
         // Event listeners para Consulta de Pedidos
