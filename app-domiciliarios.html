@@ -2006,16 +2006,24 @@
                 console.log('✅ Pedido marcado como entregado:', updatedOrder);
 
                 // Actualizar estado del domiciliario a disponible
-                const { error: deliveryError } = await supabase
+                console.log('📝 Actualizando estado del domiciliario a disponible...');
+                console.log('   - Domiciliario ID:', currentDelivery.id);
+
+                const { data: deliveryData, error: deliveryError } = await supabase
                     .from('domiciliarios')
-                    .update({ 
-                        estado: 'disponible'
+                    .update({
+                        estado: 'disponible',
+                        updated_at: new Date().toISOString()
                     })
-                    .eq('id', currentDelivery.id);
-                    
+                    .eq('id', currentDelivery.id)
+                    .select();
+
                 if (deliveryError) {
-                    console.error('⚠️ Error al actualizar estado del domiciliario:', deliveryError);
+                    console.error('❌ Error al actualizar estado del domiciliario:', deliveryError);
+                    throw new Error('No se pudo actualizar el estado del domiciliario: ' + deliveryError.message);
                 }
+
+                console.log('✅ Estado del domiciliario actualizado a disponible:', deliveryData);
 
                 stopTimer();
                 stopLocationTracking();
@@ -2066,16 +2074,24 @@
                 console.log('✅ Pedido cancelado:', updatedOrder);
 
                 // Actualizar estado del domiciliario a disponible
-                const { error: deliveryError } = await supabase
+                console.log('📝 Actualizando estado del domiciliario a disponible...');
+                console.log('   - Domiciliario ID:', currentDelivery.id);
+
+                const { data: deliveryData, error: deliveryError } = await supabase
                     .from('domiciliarios')
-                    .update({ 
-                        estado: 'disponible'
+                    .update({
+                        estado: 'disponible',
+                        updated_at: new Date().toISOString()
                     })
-                    .eq('id', currentDelivery.id);
-                    
+                    .eq('id', currentDelivery.id)
+                    .select();
+
                 if (deliveryError) {
-                    console.error('⚠️ Error al actualizar estado del domiciliario:', deliveryError);
+                    console.error('❌ Error al actualizar estado del domiciliario:', deliveryError);
+                    throw new Error('No se pudo actualizar el estado del domiciliario: ' + deliveryError.message);
                 }
+
+                console.log('✅ Estado del domiciliario actualizado a disponible:', deliveryData);
 
                 // Detener el temporizador si estaba activo
                 stopTimer();
