@@ -3502,19 +3502,27 @@
                 }
 
                 if (searchFechaDesde) {
-                    const fechaDesde = new Date(searchFechaDesde);
-                    fechaDesde.setHours(0, 0, 0, 0);
-                    filteredOrders = filteredOrders.filter(o =>
-                        new Date(o.created_at) >= fechaDesde
-                    );
+                    try {
+                        const fechaDesde = new Date(searchFechaDesde + 'T00:00:00');
+                        filteredOrders = filteredOrders.filter(o => {
+                            const orderDate = new Date(o.created_at);
+                            return orderDate >= fechaDesde;
+                        });
+                    } catch (e) {
+                        console.error('Error al procesar fecha desde:', e);
+                    }
                 }
 
                 if (searchFechaHasta) {
-                    const fechaHasta = new Date(searchFechaHasta);
-                    fechaHasta.setHours(23, 59, 59, 999);
-                    filteredOrders = filteredOrders.filter(o =>
-                        new Date(o.created_at) <= fechaHasta
-                    );
+                    try {
+                        const fechaHasta = new Date(searchFechaHasta + 'T23:59:59');
+                        filteredOrders = filteredOrders.filter(o => {
+                            const orderDate = new Date(o.created_at);
+                            return orderDate <= fechaHasta;
+                        });
+                    } catch (e) {
+                        console.error('Error al procesar fecha hasta:', e);
+                    }
                 }
 
                 // Renderizar resultados
@@ -3529,7 +3537,7 @@
 
             } catch (error) {
                 console.error('❌ Error al buscar pedidos:', error);
-                showAlert('search-alert', 'error', 'Error al realizar la búsqueda');
+                showAlert('search-alert', 'error', 'Error al realizar la búsqueda: ' + (error.message || 'Error desconocido'));
             }
         }
 
