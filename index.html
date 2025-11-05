@@ -2059,11 +2059,29 @@
                 voucherSelect.onchange = () => updateVoucherStatus(order.id, voucherSelect.value);
                 row.cells[9].appendChild(voucherSelect);
 
-                // Badge de estado
-                const statusBadge = document.createElement('span');
-                statusBadge.className = 'status-badge status-' + order.estado;
-                statusBadge.textContent = order.estado.charAt(0).toUpperCase() + order.estado.slice(1);
-                row.cells[10].appendChild(statusBadge);
+                // Estado - Si es Rappi, mostrar select editable; si no, mostrar badge
+                if (order.tipo_domiciliario === 'rappi') {
+                    // Para Rappi: Select editable (sin confirmación ni alertas)
+                    const estadoSelect = document.createElement('select');
+                    estadoSelect.className = 'btn btn-small';
+                    estadoSelect.style.width = '100%';
+                    estadoSelect.innerHTML = `
+                        <option value="pendiente">Pendiente</option>
+                        <option value="asignado">Asignado</option>
+                        <option value="en_camino">En Camino</option>
+                        <option value="entregado">Entregado</option>
+                        <option value="cancelado">Cancelado</option>
+                    `;
+                    estadoSelect.value = order.estado || 'asignado';
+                    estadoSelect.onchange = () => changeOrderStatus(order.id, estadoSelect.value, true);
+                    row.cells[10].appendChild(estadoSelect);
+                } else {
+                    // Para domiciliarios propios: Badge no editable
+                    const statusBadge = document.createElement('span');
+                    statusBadge.className = 'status-badge status-' + order.estado;
+                    statusBadge.textContent = order.estado.charAt(0).toUpperCase() + order.estado.slice(1);
+                    row.cells[10].appendChild(statusBadge);
+                }
 
                 // Crear botón dinámico Asignar/Rastrear según el estado del pedido
                 const actionBtn = document.createElement('button');
@@ -2099,16 +2117,20 @@
             renderOrders(filtered);
         }
 
-        async function changeOrderStatus(orderId, newStatus) {
+        async function changeOrderStatus(orderId, newStatus, skipConfirmation = false) {
             if (!newStatus) return;
-            if (!confirm('¿Cambiar el estado del pedido?')) return;
-            
+
+            // Solo pedir confirmación si no es un cambio desde el select de Rappi
+            if (!skipConfirmation) {
+                if (!confirm('¿Cambiar el estado del pedido?')) return;
+            }
+
             try {
                 const updateData = { estado: newStatus, updated_at: new Date().toISOString() };
-                
+
                 if (newStatus === 'entregado') {
                     updateData.tiempo_entrega = Date.now();
-                    
+
                     const order = allOrders.find(o => o.id === orderId);
                     if (order && order.domiciliario_id) {
                         await supabase.from('domiciliarios')
@@ -2120,13 +2142,27 @@
                     if (order && !order.tiempo_aceptacion) {
                         updateData.tiempo_aceptacion = Date.now();
                     }
+                    if (!order.tiempo_inicio) {
+                        updateData.tiempo_inicio = Date.now();
+                    }
+                } else if (newStatus === 'asignado') {
+                    const order = allOrders.find(o => o.id === orderId);
+                    if (!order.tiempo_aceptacion) {
+                        updateData.tiempo_aceptacion = Date.now();
+                    }
                 }
-                
+
                 await supabase.from('pedidos').update(updateData).eq('id', orderId);
-                showAlert('orders-alert', 'success', 'Estado actualizado');
+
+                // Solo mostrar alerta si no es un cambio desde el select
+                if (!skipConfirmation) {
+                    showAlert('orders-alert', 'success', 'Estado actualizado');
+                }
+
                 loadOrders();
             } catch (error) {
-                showAlert('orders-alert', 'error', 'Error');
+                showAlert('orders-alert', 'error', 'Error al actualizar estado');
+                console.error('Error:', error);
             }
         }
 
