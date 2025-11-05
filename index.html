@@ -2349,29 +2349,48 @@
          */
         async function getNextConsecutivo(domiciliarioId) {
             try {
-                // Obtener el timestamp de inicio del día (8 AM)
+                // Obtener el timestamp de inicio del día (8 AM) en milisegundos
                 const resetTimestamp = await getTodayResetTimestamp();
+                const resetTimestampMs = new Date(resetTimestamp).getTime();
 
-                // Buscar el último consecutivo del día para este domiciliario específico
+                console.log('🔢 Calculando consecutivo para domiciliario:', domiciliarioId);
+                console.log('   - Reset timestamp:', new Date(resetTimestamp).toLocaleString('es-CO', { timeZone: 'America/Bogota' }));
+                console.log('   - Reset timestamp ms:', resetTimestampMs);
+
+                // Buscar todos los pedidos asignados HOY a este domiciliario
+                // Usamos tiempo_aceptacion porque es cuando se asigna el pedido
                 const { data, error } = await supabase
                     .from('pedidos')
-                    .select('consecutivo_dia')
+                    .select('consecutivo_dia, tiempo_aceptacion')
                     .eq('domiciliario_id', domiciliarioId)
-                    .gte('created_at', resetTimestamp)
+                    .not('tiempo_aceptacion', 'is', null)
+                    .gte('tiempo_aceptacion', resetTimestampMs)
                     .order('consecutivo_dia', { ascending: false })
                     .limit(1);
 
-                if (error) throw error;
-
-                // Si este domiciliario tiene pedidos hoy, incrementar su consecutivo
-                if (data && data.length > 0 && data[0].consecutivo_dia) {
-                    return data[0].consecutivo_dia + 1;
+                if (error) {
+                    console.error('❌ Error en query de consecutivo:', error);
+                    throw error;
                 }
 
-                // Si este domiciliario no tiene pedidos hoy, empezar en 1
+                console.log('   - Pedidos encontrados:', data?.length || 0);
+                if (data && data.length > 0) {
+                    console.log('   - Último consecutivo:', data[0].consecutivo_dia);
+                    console.log('   - Tiempo aceptación:', new Date(data[0].tiempo_aceptacion).toLocaleString('es-CO', { timeZone: 'America/Bogota' }));
+                }
+
+                // Si este domiciliario tiene pedidos asignados hoy, incrementar su consecutivo
+                if (data && data.length > 0 && data[0].consecutivo_dia) {
+                    const nextConsecutivo = data[0].consecutivo_dia + 1;
+                    console.log('   ✅ Siguiente consecutivo:', nextConsecutivo);
+                    return nextConsecutivo;
+                }
+
+                // Si este domiciliario no tiene pedidos asignados hoy, empezar en 1
+                console.log('   ✅ Primer pedido del día, consecutivo: 1');
                 return 1;
             } catch (error) {
-                console.error('Error al obtener consecutivo:', error);
+                console.error('❌ Error al obtener consecutivo:', error);
                 // En caso de error, usar timestamp como fallback
                 return Math.floor(Date.now() / 1000) % 10000;
             }
