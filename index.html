@@ -981,14 +981,15 @@
                             <tr>
                                 <th style="text-align: center; font-size: 12px;">Domiciliario</th>
                                 <th style="text-align: center; font-size: 12px;">Valor Arranque</th>
-                                <th style="text-align: center; font-size: 12px;">Efectivo</th>
+                                <th style="text-align: center; font-size: 12px;">Efectivo Pedidos</th>
+                                <th style="text-align: center; font-size: 12px;">Total Efectivo</th>
                                 <th style="text-align: center; font-size: 12px;">Tarjetas (por Datafono)</th>
                                 <th style="text-align: center; font-size: 12px;">Total</th>
                             </tr>
                         </thead>
                         <tbody id="cuadre-table-body">
                             <tr>
-                                <td colspan="5" style="text-align: center; padding: 30px;">
+                                <td colspan="6" style="text-align: center; padding: 30px;">
                                     Selecciona una fecha y haz clic en "Calcular Cuadre"
                                 </td>
                             </tr>
@@ -3970,7 +3971,7 @@
             if (Object.keys(cuadrePorDomiciliario).length === 0) {
                 document.getElementById('cuadre-summary').style.display = 'none';
                 document.getElementById('cuadre-table-container').style.display = 'none';
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;">No hay domiciliarios activos para esta fecha</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">No hay domiciliarios activos para esta fecha</td></tr>';
                 return;
             }
 
@@ -4011,10 +4012,17 @@
                 cellArranque.style.textAlign = 'center';
                 cellArranque.innerHTML = `<strong>${formatCurrency(cuadre.valorArranque)}</strong>`;
 
-                // Efectivo
-                const cellEfectivo = row.insertCell();
-                cellEfectivo.style.textAlign = 'center';
-                cellEfectivo.innerHTML = `<span style="color: #27ae60; font-weight: bold;">${formatCurrency(cuadre.efectivo)}</span>`;
+                // Efectivo pedidos
+                const cellEfectivoPedidos = row.insertCell();
+                cellEfectivoPedidos.style.textAlign = 'center';
+                cellEfectivoPedidos.innerHTML = `<span style="color: #27ae60; font-weight: bold;">${formatCurrency(cuadre.efectivo)}</span>`;
+
+                // Total efectivo (arranque + pedidos)
+                const totalEfectivoDomiciliario = cuadre.valorArranque + cuadre.efectivo;
+                const cellTotalEfectivo = row.insertCell();
+                cellTotalEfectivo.style.textAlign = 'center';
+                cellTotalEfectivo.style.backgroundColor = '#e8f5e9';
+                cellTotalEfectivo.innerHTML = `<strong style="color: #27ae60; font-size: 15px;">${formatCurrency(totalEfectivoDomiciliario)}</strong>`;
 
                 // Tarjetas por datafono
                 const cellTarjetas = row.insertCell();
@@ -4041,42 +4049,6 @@
                 cellTotal.style.textAlign = 'center';
                 cellTotal.innerHTML = `<strong style="color: #667eea; font-size: 16px;">${formatCurrency(cuadre.total)}</strong>`;
             });
-
-            // Agregar fila de totales
-            const totalRow = tbody.insertRow();
-            totalRow.style.backgroundColor = '#f8f9fa';
-            totalRow.style.fontWeight = 'bold';
-            totalRow.style.borderTop = '2px solid #667eea';
-
-            // Celda "TOTALES"
-            const cellTotalLabel = totalRow.insertCell();
-            cellTotalLabel.style.textAlign = 'center';
-            cellTotalLabel.style.padding = '12px';
-            cellTotalLabel.innerHTML = '<strong style="color: #667eea; font-size: 16px;">TOTALES</strong>';
-
-            // Celda Valor Arranque Total
-            const cellTotalArranque = totalRow.insertCell();
-            cellTotalArranque.style.textAlign = 'center';
-            cellTotalArranque.style.padding = '12px';
-            cellTotalArranque.innerHTML = `<strong style="font-size: 16px;">${formatCurrency(totalArranque)}</strong>`;
-
-            // Celda Efectivo Total
-            const cellTotalEfectivo = totalRow.insertCell();
-            cellTotalEfectivo.style.textAlign = 'center';
-            cellTotalEfectivo.style.padding = '12px';
-            cellTotalEfectivo.innerHTML = `<strong style="color: #27ae60; font-size: 16px;">${formatCurrency(totalEfectivo)}</strong>`;
-
-            // Celda Tarjetas Total
-            const cellTotalTarjetas = totalRow.insertCell();
-            cellTotalTarjetas.style.textAlign = 'center';
-            cellTotalTarjetas.style.padding = '12px';
-            cellTotalTarjetas.innerHTML = `<strong style="color: #3498db; font-size: 16px;">${formatCurrency(totalTarjetas)}</strong>`;
-
-            // Celda Total General
-            const cellTotalGeneral = totalRow.insertCell();
-            cellTotalGeneral.style.textAlign = 'center';
-            cellTotalGeneral.style.padding = '12px';
-            cellTotalGeneral.innerHTML = `<strong style="color: #667eea; font-size: 18px;">${formatCurrency(totalGeneral)}</strong>`;
         }
 
         /**
@@ -4091,7 +4063,7 @@
             document.getElementById('cuadre-initial-message').style.display = 'block';
 
             const tbody = document.getElementById('cuadre-table-body');
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;">Selecciona una fecha y haz clic en "Calcular Cuadre"</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">Selecciona una fecha y haz clic en "Calcular Cuadre"</td></tr>';
 
             document.getElementById('cuadre-alert').innerHTML = '';
         }
