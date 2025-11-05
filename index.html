@@ -1936,7 +1936,17 @@
                 const isFinalized = order.estado === 'entregado' || order.estado === 'cancelado';
 
                 const row = tbody.insertRow();
-                const orderDisplay = order.consecutivo_dia ? `#${order.consecutivo_dia}` : `#${order.id.substring(0, 8)}`;
+                // Mostrar consecutivo si existe y tiene domiciliario asignado
+                let orderDisplay;
+                if (order.consecutivo_dia && order.domiciliario_nombre && order.tipo_domiciliario === 'propio') {
+                    // Mostrar nombre del domiciliario + consecutivo
+                    const nombreCorto = order.domiciliario_nombre.split(' ')[0]; // Primer nombre
+                    orderDisplay = `${nombreCorto} #${order.consecutivo_dia}`;
+                } else if (order.consecutivo_dia) {
+                    orderDisplay = `#${order.consecutivo_dia}`;
+                } else {
+                    orderDisplay = `#${order.id.substring(0, 8)}`;
+                }
                 row.innerHTML = `
                     <td style="text-align: center;"><strong>${orderDisplay}</strong></td>
                     <td style="text-align: center;"><strong>${order.cliente}</strong><br><small style="font-size: 11px;">${order.telefono_cliente}</small></td>
@@ -2278,16 +2288,14 @@
                     return;
                 }
 
-                // Obtener el siguiente consecutivo del día
-                const consecutivo = await getNextConsecutivo();
-
                 const updateData = {
                     tipo_domiciliario: tipo,
                     estado: 'asignado',
                     tiempo_aceptacion: Date.now(),
-                    consecutivo_dia: consecutivo,
                     updated_at: new Date().toISOString()
                 };
+
+                let consecutivo = null;
 
                 // Si es Rappi
                 if (tipo === 'rappi') {
@@ -2295,14 +2303,19 @@
                     updateData.domiciliario_nombre = 'Rappi';
                     updateData.domiciliario_telefono = null;
                     updateData.numero_datafono = null;
+                    // Rappi no necesita consecutivo individual
                 } else if (tipo === 'propio') {
                     // Si es domiciliario propio
                     const driver = allDeliveryDrivers.find(d => d.id === domiciliarioId);
                     if (driver) {
+                        // Obtener el siguiente consecutivo para ESTE domiciliario específico
+                        consecutivo = await getNextConsecutivo(domiciliarioId);
+
                         updateData.domiciliario_id = domiciliarioId;
                         updateData.domiciliario_nombre = driver.nombre;
                         updateData.domiciliario_telefono = driver.telefono;
                         updateData.numero_datafono = datafono || null;
+                        updateData.consecutivo_dia = consecutivo;
 
                         // ✅ NO cambiar el estado del domiciliario a "ocupado"
                         // Esto permite asignar múltiples pedidos al mismo domiciliario
@@ -2315,7 +2328,11 @@
 
                 // Actualizar el pedido
                 await supabase.from('pedidos').update(updateData).eq('id', orderId);
-                showAlert('orders-alert', 'success', `Pedido #${consecutivo} asignado correctamente`);
+
+                const successMsg = consecutivo
+                    ? `Pedido #${consecutivo} asignado correctamente`
+                    : 'Pedido asignado correctamente';
+                showAlert('orders-alert', 'success', successMsg);
 
                 // Recargar pedidos para actualizar la interfaz
                 loadOrders();
@@ -2326,29 +2343,32 @@
         }
 
         /**
-         * Obtener el siguiente número consecutivo del día
+         * Obtener el siguiente número consecutivo del día para un domiciliario específico
+         * @param {string} domiciliarioId - ID del domiciliario para calcular su consecutivo
+         * @returns {number} - Siguiente número consecutivo para ese domiciliario
          */
-        async function getNextConsecutivo() {
+        async function getNextConsecutivo(domiciliarioId) {
             try {
                 // Obtener el timestamp de inicio del día (8 AM)
                 const resetTimestamp = await getTodayResetTimestamp();
 
-                // Buscar el último consecutivo del día
+                // Buscar el último consecutivo del día para este domiciliario específico
                 const { data, error } = await supabase
                     .from('pedidos')
                     .select('consecutivo_dia')
+                    .eq('domiciliario_id', domiciliarioId)
                     .gte('created_at', resetTimestamp)
                     .order('consecutivo_dia', { ascending: false })
                     .limit(1);
 
                 if (error) throw error;
 
-                // Si hay pedidos hoy, incrementar el consecutivo
+                // Si este domiciliario tiene pedidos hoy, incrementar su consecutivo
                 if (data && data.length > 0 && data[0].consecutivo_dia) {
                     return data[0].consecutivo_dia + 1;
                 }
 
-                // Si no hay pedidos hoy, empezar en 1
+                // Si este domiciliario no tiene pedidos hoy, empezar en 1
                 return 1;
             } catch (error) {
                 console.error('Error al obtener consecutivo:', error);
