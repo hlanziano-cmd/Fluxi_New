@@ -953,7 +953,7 @@
                                 border-radius: 10px;
                                 margin-bottom: 20px;">
                         <h4 style="margin-bottom: 15px; color: white;">📊 Resumen del Día</h4>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
                             <div>
                                 <div style="font-size: 12px; opacity: 0.9;">Total en Efectivo</div>
                                 <div id="cuadre-total-efectivo" style="font-size: 24px; font-weight: bold;">$0</div>
@@ -961,10 +961,6 @@
                             <div>
                                 <div style="font-size: 12px; opacity: 0.9;">Total en Tarjetas</div>
                                 <div id="cuadre-total-tarjetas" style="font-size: 24px; font-weight: bold;">$0</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 12px; opacity: 0.9;">Total Valor Arranque</div>
-                                <div id="cuadre-total-arranque" style="font-size: 24px; font-weight: bold;">$0</div>
                             </div>
                             <div>
                                 <div style="font-size: 12px; opacity: 0.9;">Total General</div>
@@ -3987,22 +3983,19 @@
             document.getElementById('cuadre-table-container').style.display = 'block';
 
             // Calcular totales generales
-            let totalEfectivo = 0;
+            let totalEfectivoCompleto = 0; // arranque + efectivo de pedidos
             let totalTarjetas = 0;
-            let totalArranque = 0;
 
             Object.values(cuadrePorDomiciliario).forEach(cuadre => {
-                totalEfectivo += cuadre.efectivo;
+                totalEfectivoCompleto += cuadre.valorArranque + cuadre.efectivo; // Suma arranque + efectivo
                 totalTarjetas += cuadre.totalTarjetas;
-                totalArranque += cuadre.valorArranque;
             });
 
-            const totalGeneral = totalArranque + totalEfectivo + totalTarjetas;
+            const totalGeneral = totalEfectivoCompleto + totalTarjetas;
 
             // Actualizar resumen
-            document.getElementById('cuadre-total-efectivo').textContent = formatCurrency(totalEfectivo);
+            document.getElementById('cuadre-total-efectivo').textContent = formatCurrency(totalEfectivoCompleto);
             document.getElementById('cuadre-total-tarjetas').textContent = formatCurrency(totalTarjetas);
-            document.getElementById('cuadre-total-arranque').textContent = formatCurrency(totalArranque);
             document.getElementById('cuadre-total-general').textContent = formatCurrency(totalGeneral);
 
             // Renderizar tabla
