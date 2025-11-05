@@ -2046,7 +2046,7 @@
                 }
                 row.cells[8].appendChild(datafonoInput);
 
-                // Select para Estado Voucher
+                // Select para Estado Voucher (siempre editable)
                 const voucherSelect = document.createElement('select');
                 voucherSelect.className = 'btn btn-small';
                 voucherSelect.style.width = '100%';
@@ -2055,10 +2055,8 @@
                     <option value="entregado">Entregado</option>
                 `;
                 voucherSelect.value = order.estado_voucher || 'pendiente';
-                voucherSelect.disabled = isFinalized;
-                if (!isFinalized) {
-                    voucherSelect.onchange = () => updateVoucherStatus(order.id, voucherSelect.value);
-                }
+                // Voucher siempre es editable, sin importar el estado del pedido
+                voucherSelect.onchange = () => updateVoucherStatus(order.id, voucherSelect.value);
                 row.cells[9].appendChild(voucherSelect);
 
                 // Badge de estado
@@ -2231,7 +2229,7 @@
                 };
 
                 await supabase.from('pedidos').update(updateData).eq('id', orderId);
-                showAlert('orders-alert', 'success', 'Estado de voucher actualizado');
+                // No mostrar alerta para no interrumpir la edición
 
                 // Actualizar el array local
                 const orderIndex = allOrders.findIndex(o => o.id === orderId);
@@ -2317,6 +2315,12 @@
                         updateData.numero_datafono = datafono || null;
                         updateData.consecutivo_dia = consecutivo;
 
+                        console.log('📝 Datos a actualizar:', {
+                            orderId: orderId,
+                            consecutivo: consecutivo,
+                            domiciliario: driver.nombre
+                        });
+
                         // ✅ NO cambiar el estado del domiciliario a "ocupado"
                         // Esto permite asignar múltiples pedidos al mismo domiciliario
                         // El estado se actualizará cuando inicie la entrega
@@ -2327,7 +2331,19 @@
                 }
 
                 // Actualizar el pedido
-                await supabase.from('pedidos').update(updateData).eq('id', orderId);
+                console.log('💾 Guardando updateData:', updateData);
+                const { data: updatedOrder, error: updateError } = await supabase
+                    .from('pedidos')
+                    .update(updateData)
+                    .eq('id', orderId)
+                    .select();
+
+                if (updateError) {
+                    console.error('❌ Error al actualizar pedido:', updateError);
+                    throw updateError;
+                }
+
+                console.log('✅ Pedido actualizado en BD:', updatedOrder);
 
                 const successMsg = consecutivo
                     ? `Pedido #${consecutivo} asignado correctamente`
