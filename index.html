@@ -3858,11 +3858,8 @@
                 if (configError) throw configError;
 
                 // Obtener pedidos del día
-                const fechaInicio = new Date(fecha);
-                fechaInicio.setHours(0, 0, 0, 0);
-
-                const fechaFin = new Date(fecha);
-                fechaFin.setHours(23, 59, 59, 999);
+                const fechaInicio = new Date(fecha + 'T00:00:00');
+                const fechaFin = new Date(fecha + 'T23:59:59');
 
                 let query = supabase
                     .from('pedidos')
@@ -3879,6 +3876,9 @@
                 const { data: pedidos, error: pedidosError } = await query;
 
                 if (pedidosError) throw pedidosError;
+
+                console.log(`📦 Pedidos encontrados para ${fecha}:`, pedidos.length);
+                console.log('Pedidos con tarjeta:', pedidos.filter(p => p.metodo_pago === 'tarjeta').length);
 
                 // Obtener información de domiciliarios
                 const { data: allDrivers, error: driversError } = await supabase
@@ -3929,13 +3929,18 @@
 
                     if (pedido.metodo_pago === 'efectivo') {
                         cuadre.efectivo += valorDomicilio;
-                    } else if (pedido.metodo_pago === 'tarjeta' && pedido.numero_datafono) {
-                        const datafono = pedido.numero_datafono;
-                        if (!cuadre.tarjetas[datafono]) {
-                            cuadre.tarjetas[datafono] = 0;
+                    } else if (pedido.metodo_pago === 'tarjeta') {
+                        if (pedido.numero_datafono) {
+                            const datafono = pedido.numero_datafono;
+                            if (!cuadre.tarjetas[datafono]) {
+                                cuadre.tarjetas[datafono] = 0;
+                            }
+                            cuadre.tarjetas[datafono] += valorDomicilio;
+                            cuadre.totalTarjetas += valorDomicilio;
+                            console.log(`💳 Tarjeta procesada - Domiciliario: ${cuadre.nombre}, Datafono: ${datafono}, Valor: ${valorDomicilio}`);
+                        } else {
+                            console.warn(`⚠️ Pedido con tarjeta sin datafono:`, pedido.id, pedido.cliente);
                         }
-                        cuadre.tarjetas[datafono] += valorDomicilio;
-                        cuadre.totalTarjetas += valorDomicilio;
                     }
 
                     cuadre.total = cuadre.valorArranque + cuadre.efectivo + cuadre.totalTarjetas;
