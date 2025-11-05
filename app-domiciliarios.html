@@ -681,6 +681,7 @@
                                     box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                             <div style="font-size: 11px; opacity: 0.9; margin-bottom: 5px;">💵 Efectivo Recaudado</div>
                             <div id="balance-efectivo" style="font-size: 20px; font-weight: bold;">$0</div>
+                            <div id="balance-efectivo-cantidad" style="font-size: 10px; opacity: 0.8; margin-top: 5px;">0 pedidos</div>
                         </div>
                     </div>
 
@@ -1942,18 +1943,34 @@
                     .gte('created_at', fechaInicio.toISOString())
                     .lte('created_at', fechaFin.toISOString());
 
+                console.log('📊 Pedidos entregados encontrados:', pedidosEntregados?.length || 0);
+                console.log('📊 Rango de fechas:', {
+                    inicio: fechaInicio.toISOString(),
+                    fin: fechaFin.toISOString()
+                });
+
                 // Calcular efectivo y datáfono
                 let efectivoRecaudado = 0;
                 let datafonoTotal = 0;
                 let numeroDatafono = null;
+                let cantidadEfectivo = 0;
+                let cantidadDatafono = 0;
 
                 (pedidosEntregados || []).forEach(pedido => {
                     const valorDomicilio = pedido.valor_domicilio || 0;
 
+                    console.log('💵 Procesando pedido:', {
+                        id: pedido.id.substring(0, 8),
+                        metodo_pago: pedido.metodo_pago,
+                        valor_domicilio: valorDomicilio
+                    });
+
                     if (pedido.metodo_pago === 'efectivo') {
                         efectivoRecaudado += valorDomicilio;
+                        cantidadEfectivo++;
                     } else if (pedido.metodo_pago === 'datafono') {
                         datafonoTotal += valorDomicilio;
+                        cantidadDatafono++;
                         if (pedido.numero_datafono && !numeroDatafono) {
                             numeroDatafono = pedido.numero_datafono;
                         }
@@ -1963,15 +1980,29 @@
                 const totalEfectivo = valorArranque + efectivoRecaudado;
                 const totalGeneral = totalEfectivo + datafonoTotal;
 
+                console.log('💰 Totales calculados:', {
+                    efectivoRecaudado,
+                    cantidadEfectivo,
+                    datafonoTotal,
+                    cantidadDatafono,
+                    totalEfectivo,
+                    totalGeneral
+                });
+
                 // Actualizar UI
                 document.getElementById('balance-arranque').textContent = formatCurrency(valorArranque);
                 document.getElementById('balance-efectivo').textContent = formatCurrency(efectivoRecaudado);
+                document.getElementById('balance-efectivo-cantidad').textContent = `${cantidadEfectivo} pedido${cantidadEfectivo !== 1 ? 's' : ''}`;
                 document.getElementById('balance-total-efectivo').textContent = formatCurrency(totalEfectivo);
                 document.getElementById('balance-tarjetas').textContent = formatCurrency(datafonoTotal);
                 document.getElementById('balance-total-general').textContent = formatCurrency(totalGeneral);
 
-                // Actualizar info del datáfono
-                const datafonoInfo = numeroDatafono ? `Datáfono: ${numeroDatafono}` : 'Sin datáfono asignado';
+                // Actualizar info del datáfono con cantidad de pedidos
+                const datafonoInfo = numeroDatafono
+                    ? `Datáfono: ${numeroDatafono} | ${cantidadDatafono} pedido${cantidadDatafono !== 1 ? 's' : ''}`
+                    : cantidadDatafono > 0
+                        ? `${cantidadDatafono} pedido${cantidadDatafono !== 1 ? 's' : ''} sin datáfono`
+                        : 'Sin datáfono asignado';
                 document.getElementById('balance-datafono-info').textContent = datafonoInfo;
 
                 // Actualizar texto del período
