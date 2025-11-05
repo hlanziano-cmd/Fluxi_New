@@ -1643,31 +1643,43 @@
             if (!currentDelivery) return;
 
             try {
+                // Obtener TODOS los pedidos asignados, ordenados por tiempo de aceptación (el primero aceptado primero)
                 const { data: activeOrders } = await supabase
                     .from('pedidos')
                     .select('*')
                     .eq('domiciliario_id', currentDelivery.id)
                     .in('estado', ['asignado', 'en_camino'])
-                    .order('created_at', { ascending: false });
+                    .order('tiempo_aceptacion', { ascending: true }); // Primero el que fue aceptado primero
 
                 if (activeOrders && activeOrders.length > 0) {
-                    activeOrder = activeOrders[0];
-                    renderActiveOrder(activeOrder);
-                    
+                    console.log(`📦 ${activeOrders.length} pedido(s) asignado(s)`);
+
+                    // Renderizar TODOS los pedidos activos
+                    renderActiveOrders(activeOrders);
+
                     // ✅ NO ACTIVAR UBICACIÓN AUTOMÁTICAMENTE
                     // El domiciliario debe activarla manualmente con el botón
                     if (!isLocationActive) {
-                        console.log('ℹ️ Pedido activo detectado. Recuerda activar tu ubicación con el botón verde.');
+                        console.log('ℹ️ Pedidos activos detectados. Recuerda activar tu ubicación con el botón verde.');
                         // Mostrar recordatorio visual si la ubicación no está activa
-                        if (activeOrder.estado === 'asignado' || activeOrder.estado === 'en_camino') {
+                        const hayPedidosEnCamino = activeOrders.some(o => o.estado === 'en_camino');
+                        if (hayPedidosEnCamino) {
                             showAlert('📍 Recuerda activar tu ubicación con el botón verde para que puedan rastrearte.', 'warning');
                         }
+                    }
+
+                    // Iniciar temporizador si hay pedidos en camino
+                    const primerPedidoEnCamino = activeOrders.find(o => o.estado === 'en_camino');
+                    if (primerPedidoEnCamino && !timerInterval) {
+                        const startTime = primerPedidoEnCamino.tiempo_inicio || Date.now();
+                        console.log('⏱️ Recuperando temporizador desde:', new Date(startTime).toLocaleTimeString());
+                        startTimer(startTime);
                     }
                 } else {
                     activeOrder = null;
                     document.getElementById('active-order-container').classList.add('hidden');
                     stopTimer();
-                    
+
                     await supabase
                         .from('domiciliarios')
                         .update({ estado: 'disponible' })
@@ -1692,22 +1704,15 @@
             }
         }
 
-        function renderActiveOrder(order) {
+        function renderActiveOrders(orders) {
             document.getElementById('active-order-container').classList.remove('hidden');
             document.getElementById('available-orders-container').classList.add('hidden');
 
-            // Iniciar temporizador si el pedido está en camino
-            if (order.estado === 'en_camino' && !timerInterval) {
-                // Recuperar tiempo de inicio desde la BD
-                const startTime = order.tiempo_aceptacion || Date.now();
-                console.log('⏱️ Recuperando temporizador desde:', new Date(startTime).toLocaleTimeString());
-                startTimer(startTime);
-            }
-
-            const card = `
-                <div class="order-card active">
+            // Generar HTML para todos los pedidos
+            const cardsHTML = orders.map((order, index) => `
+                <div class="order-card active" style="margin-bottom: 15px;">
                     <div class="order-header">
-                        <div class="order-id">#${order.id.substring(0, 8)}</div>
+                        <div class="order-id">#${index + 1} - ${order.id.substring(0, 8)}</div>
                         <span class="order-status ${order.estado}">${order.estado === 'asignado' ? 'Asignado' : 'En Camino'}</span>
                     </div>
                     <div class="order-detail">
@@ -1722,6 +1727,10 @@
                         <div class="order-detail-row">
                             <div class="order-detail-label">📍 Dirección:</div>
                             <div class="order-detail-value">${order.direccion}</div>
+                        </div>
+                        <div class="order-detail-row">
+                            <div class="order-detail-label">🏘️ Barrio:</div>
+                            <div class="order-detail-value">${order.barrio || 'No especificado'}</div>
                         </div>
                         <div class="order-detail-row">
                             <div class="order-detail-label">💰 Total:</div>
@@ -1740,8 +1749,8 @@
                     </div>
                     <div class="action-buttons">
                         ${order.estado === 'asignado' ? `
-                            <button class="btn btn-success" onclick="window.startDelivery('${order.id}')">
-                                🚀 Iniciar Entrega
+                            <button class="btn btn-success" onclick="window.startDeliveryRoute('${order.id}')">
+                                🚀 Iniciar Ruta
                             </button>
                         ` : ''}
                         ${order.estado === 'en_camino' ? `
@@ -1754,9 +1763,17 @@
                         </button>
                     </div>
                 </div>
-            `;
+            `).join('');
 
-            document.getElementById('active-order-card').innerHTML = card;
+            // Actualizar el título del contenedor
+            const tituloContainer = document.querySelector('#active-order-container h2');
+            if (tituloContainer) {
+                tituloContainer.textContent = orders.length > 1
+                    ? `📦 Mis Pedidos (${orders.length})`
+                    : '📦 Pedido Activo';
+            }
+
+            document.getElementById('active-order-card').innerHTML = cardsHTML;
         }
 
         function renderAvailableOrders(orders) {
@@ -2064,6 +2081,79 @@
                 if (!isLocationActive) {
                     stopLocationTracking();
                 }
+            } finally {
+                // Rehabilitar botones
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        };
+
+        /**
+         * Iniciar ruta de entrega - Cuando hay múltiples pedidos, todos inician juntos
+         */
+        window.startDeliveryRoute = async function(triggeredOrderId) {
+            console.log('🚀 ========== INICIANDO RUTA DE ENTREGA ==========');
+            console.log('   - Pedido que disparó la ruta:', triggeredOrderId);
+
+            // 🔒 VALIDACIÓN: Verificar que la ubicación esté activa
+            if (!isLocationActive) {
+                console.warn('⚠️ Intento de iniciar ruta sin ubicación activa');
+                showAlert('⚠️ Debes tener la ubicación activada para iniciar la ruta. Por favor activa tu ubicación primero.', 'warning');
+                return;
+            }
+
+            // Deshabilitar botones temporalmente
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+
+            try {
+                const startTime = Date.now();
+                console.log('   - Tiempo de inicio:', new Date(startTime).toLocaleTimeString());
+
+                // Obtener TODOS los pedidos asignados al domiciliario
+                const { data: pedidosAsignados, error: fetchError } = await supabase
+                    .from('pedidos')
+                    .select('*')
+                    .eq('domiciliario_id', currentDelivery.id)
+                    .eq('estado', 'asignado');
+
+                if (fetchError) throw fetchError;
+
+                console.log(`   - Se encontraron ${pedidosAsignados.length} pedido(s) asignado(s)`);
+                console.log('   - Pedidos:', pedidosAsignados.map(p => p.id.substring(0, 8)));
+
+                // Actualizar TODOS los pedidos asignados a "en_camino" con el mismo tiempo de inicio
+                const pedidosIds = pedidosAsignados.map(p => p.id);
+
+                const { data: updatedOrders, error: updateError } = await supabase
+                    .from('pedidos')
+                    .update({
+                        estado: 'en_camino',
+                        tiempo_inicio: startTime,
+                        updated_at: new Date().toISOString()
+                    })
+                    .in('id', pedidosIds)
+                    .select();
+
+                if (updateError) {
+                    console.error('❌ Error al actualizar pedidos:', updateError);
+                    throw updateError;
+                }
+
+                console.log(`✅ ${updatedOrders.length} pedido(s) actualizado(s) a "en_camino"`);
+
+                // Iniciar el temporizador compartido
+                startTimer(startTime);
+
+                showAlert(`✅ ¡Ruta iniciada! ${updatedOrders.length} pedido(s) en camino. El temporizador está corriendo.`, 'success');
+
+                console.log('🔄 Recargando pedidos...');
+                await loadOrders();
+                console.log('✅ ========== RUTA INICIADA EXITOSAMENTE ==========');
+
+            } catch (error) {
+                console.error('❌ ========== ERROR AL INICIAR RUTA ==========');
+                console.error('Error completo:', error);
+                showAlert('❌ Error al iniciar ruta: ' + error.message, 'danger');
             } finally {
                 // Rehabilitar botones
                 buttons.forEach(btn => btn.disabled = false);
