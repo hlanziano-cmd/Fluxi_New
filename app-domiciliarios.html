@@ -1709,10 +1709,12 @@
             document.getElementById('available-orders-container').classList.add('hidden');
 
             // Generar HTML para todos los pedidos
-            const cardsHTML = orders.map((order, index) => `
+            const cardsHTML = orders.map((order, index) => {
+                const orderDisplay = order.consecutivo_dia ? `Pedido #${order.consecutivo_dia}` : `#${order.id.substring(0, 8)}`;
+                return `
                 <div class="order-card active" style="margin-bottom: 15px;">
                     <div class="order-header">
-                        <div class="order-id">#${index + 1} - ${order.id.substring(0, 8)}</div>
+                        <div class="order-id">${orderDisplay}</div>
                         <span class="order-status ${order.estado}">${order.estado === 'asignado' ? 'Asignado' : 'En Camino'}</span>
                     </div>
                     <div class="order-detail">
@@ -1763,7 +1765,8 @@
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             // Actualizar el título del contenedor
             const tituloContainer = document.querySelector('#active-order-container h2');

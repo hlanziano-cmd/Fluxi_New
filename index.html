@@ -1324,15 +1324,16 @@
             return hours > 0 ? hours + 'h ' + minutes + 'm' : minutes + 'm';
         }
 
-        function sendWhatsAppNotification(phone, nombre) {
+        function sendWhatsAppNotification(phone, nombre, consecutivo) {
             const cleanPhone = phone.replace(/\D/g, '');
             const msg = `¡Hola ${nombre}! 🏍️\n\n` +
                        `Tienes un nuevo pedido asignado en Fluxi.\n\n` +
+                       `📦 Pedido #${consecutivo}\n\n` +
                        `📱 Abre tu app para aceptar el pedido:\n` +
                        `${APP_URL}\n\n` +
                        `Recuerda que debes activar tu ubicación para poder iniciar la entrega.\n\n` +
                        `¡Gracias!`;
-            
+
             window.open('https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(msg), '_blank');
         }
 
@@ -1935,8 +1936,9 @@
                 const isFinalized = order.estado === 'entregado' || order.estado === 'cancelado';
 
                 const row = tbody.insertRow();
+                const orderDisplay = order.consecutivo_dia ? `#${order.consecutivo_dia}` : `#${order.id.substring(0, 8)}`;
                 row.innerHTML = `
-                    <td style="text-align: center;"><strong>#${order.id.substring(0, 8)}</strong></td>
+                    <td style="text-align: center;"><strong>${orderDisplay}</strong></td>
                     <td style="text-align: center;"><strong>${order.cliente}</strong><br><small style="font-size: 11px;">${order.telefono_cliente}</small></td>
                     <td style="text-align: center; font-size: 12px;">${order.direccion}</td>
                     <td style="text-align: center; font-size: 12px;">${order.barrio || '--'}</td>
@@ -2276,10 +2278,14 @@
                     return;
                 }
 
+                // Obtener el siguiente consecutivo del día
+                const consecutivo = await getNextConsecutivo();
+
                 const updateData = {
                     tipo_domiciliario: tipo,
                     estado: 'asignado',
                     tiempo_aceptacion: Date.now(),
+                    consecutivo_dia: consecutivo,
                     updated_at: new Date().toISOString()
                 };
 
@@ -2298,25 +2304,56 @@
                         updateData.domiciliario_telefono = driver.telefono;
                         updateData.numero_datafono = datafono || null;
 
-                        // Actualizar estado del domiciliario a ocupado
-                        await supabase.from('domiciliarios')
-                            .update({ estado: 'ocupado' })
-                            .eq('id', domiciliarioId);
+                        // ✅ NO cambiar el estado del domiciliario a "ocupado"
+                        // Esto permite asignar múltiples pedidos al mismo domiciliario
+                        // El estado se actualizará cuando inicie la entrega
 
-                        // Enviar notificación de WhatsApp
-                        sendWhatsAppNotification(driver.telefono, driver.nombre);
+                        // Enviar notificación de WhatsApp con el consecutivo
+                        sendWhatsAppNotification(driver.telefono, driver.nombre, consecutivo);
                     }
                 }
 
                 // Actualizar el pedido
                 await supabase.from('pedidos').update(updateData).eq('id', orderId);
-                showAlert('orders-alert', 'success', 'Pedido asignado correctamente');
+                showAlert('orders-alert', 'success', `Pedido #${consecutivo} asignado correctamente`);
 
                 // Recargar pedidos para actualizar la interfaz
                 loadOrders();
             } catch (error) {
                 showAlert('orders-alert', 'error', 'Error al asignar pedido');
                 console.error('Error:', error);
+            }
+        }
+
+        /**
+         * Obtener el siguiente número consecutivo del día
+         */
+        async function getNextConsecutivo() {
+            try {
+                // Obtener el timestamp de inicio del día (8 AM)
+                const resetTimestamp = await getTodayResetTimestamp();
+
+                // Buscar el último consecutivo del día
+                const { data, error } = await supabase
+                    .from('pedidos')
+                    .select('consecutivo_dia')
+                    .gte('created_at', resetTimestamp)
+                    .order('consecutivo_dia', { ascending: false })
+                    .limit(1);
+
+                if (error) throw error;
+
+                // Si hay pedidos hoy, incrementar el consecutivo
+                if (data && data.length > 0 && data[0].consecutivo_dia) {
+                    return data[0].consecutivo_dia + 1;
+                }
+
+                // Si no hay pedidos hoy, empezar en 1
+                return 1;
+            } catch (error) {
+                console.error('Error al obtener consecutivo:', error);
+                // En caso de error, usar timestamp como fallback
+                return Math.floor(Date.now() / 1000) % 10000;
             }
         }
 
