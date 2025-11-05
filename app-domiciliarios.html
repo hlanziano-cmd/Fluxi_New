@@ -653,7 +653,8 @@
 
                 <!-- Cash Balance Section -->
                 <div id="cash-balance-section" style="margin: 20px 0;">
-                    <h2 style="margin-bottom: 15px; color: #2c3e50;">💰 Mi Cuadre de Caja</h2>
+                    <h2 style="margin-bottom: 5px; color: #2c3e50;">💰 Mi Cuadre de Caja</h2>
+                    <p id="balance-period-info" style="font-size: 12px; color: #7f8c8d; margin-bottom: 15px;">Desde las 8:00 AM de hoy</p>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                         <!-- Valor Arranque -->
@@ -1842,22 +1843,52 @@
             if (!currentDelivery) return;
 
             try {
+                // Obtener fecha actual y calcular el inicio del día laboral (8 AM)
+                const ahora = new Date();
                 const today = new Date().toISOString().split('T')[0];
 
-                // Obtener valor de arranque del día
+                // Calcular inicio del día laboral (hoy a las 8 AM)
+                const inicioDiaLaboral = new Date(today + 'T08:00:00');
+
+                // Si aún no son las 8 AM de hoy, usar las 8 AM de ayer
+                let fechaInicio;
+                let fechaConfiguracion = today;
+
+                if (ahora < inicioDiaLaboral) {
+                    // Estamos antes de las 8 AM, mostrar datos desde las 8 AM de ayer
+                    const ayer = new Date(ahora);
+                    ayer.setDate(ayer.getDate() - 1);
+                    const ayerStr = ayer.toISOString().split('T')[0];
+                    fechaInicio = new Date(ayerStr + 'T08:00:00');
+                    fechaConfiguracion = ayerStr; // Usar configuración de ayer
+
+                    console.log('⏰ Antes de las 8 AM - Mostrando cuadre desde las 8 AM de ayer');
+                } else {
+                    // Después de las 8 AM, mostrar datos desde las 8 AM de hoy
+                    fechaInicio = inicioDiaLaboral;
+
+                    console.log('⏰ Después de las 8 AM - Mostrando cuadre desde las 8 AM de hoy');
+                }
+
+                // Fecha fin es el momento actual
+                const fechaFin = new Date();
+
+                console.log('📅 Rango de cuadre:', {
+                    inicio: fechaInicio.toLocaleString('es-CO'),
+                    fin: fechaFin.toLocaleString('es-CO')
+                });
+
+                // Obtener valor de arranque del día laboral actual
                 const { data: config } = await supabase
                     .from('configuracion_diaria')
                     .select('valor_arranque')
-                    .eq('fecha', today)
+                    .eq('fecha', fechaConfiguracion)
                     .eq('domiciliario_id', currentDelivery.id)
                     .single();
 
                 const valorArranque = config?.valor_arranque || 0;
 
-                // Obtener pedidos entregados del día
-                const fechaInicio = new Date(today + 'T00:00:00');
-                const fechaFin = new Date(today + 'T23:59:59');
-
+                // Obtener pedidos entregados desde las 8 AM del día laboral actual
                 const { data: pedidosEntregados } = await supabase
                     .from('pedidos')
                     .select('*')
@@ -1897,6 +1928,12 @@
                 // Actualizar info del datáfono
                 const datafonoInfo = numeroDatafono ? `Datáfono: ${numeroDatafono}` : 'Sin datáfono asignado';
                 document.getElementById('balance-datafono-info').textContent = datafonoInfo;
+
+                // Actualizar texto del período
+                const periodInfo = ahora < inicioDiaLaboral
+                    ? '⏰ Desde las 8:00 AM de ayer (Antes del corte de hoy)'
+                    : '⏰ Desde las 8:00 AM de hoy';
+                document.getElementById('balance-period-info').textContent = periodInfo;
 
                 console.log('💰 Cuadre actualizado:', {
                     valorArranque,
