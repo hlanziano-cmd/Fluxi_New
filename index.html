@@ -3416,19 +3416,19 @@
             if (!supabase) return;
 
             try {
-                // Obtener valores de búsqueda
-                const searchId = document.getElementById('search-id').value.trim().toLowerCase();
-                const searchCliente = document.getElementById('search-cliente').value.trim().toLowerCase();
-                const searchDireccion = document.getElementById('search-direccion').value.trim().toLowerCase();
-                const searchBarrio = document.getElementById('search-barrio').value.trim().toLowerCase();
-                const searchTipoDom = document.getElementById('search-tipo-dom').value;
-                const searchDomiciliario = document.getElementById('search-delivery-person').value;
-                const searchMetodoPago = document.getElementById('search-metodo-pago').value;
-                const searchDatafono = document.getElementById('search-datafono').value.trim();
-                const searchEstadoVoucher = document.getElementById('search-estado-voucher').value;
-                const searchEstado = document.getElementById('search-estado').value;
-                const searchFechaDesde = document.getElementById('search-fecha-desde').value;
-                const searchFechaHasta = document.getElementById('search-fecha-hasta').value;
+                // Obtener valores de búsqueda con validación
+                const searchId = document.getElementById('search-id')?.value?.trim()?.toLowerCase() || '';
+                const searchCliente = document.getElementById('search-cliente')?.value?.trim()?.toLowerCase() || '';
+                const searchDireccion = document.getElementById('search-direccion')?.value?.trim()?.toLowerCase() || '';
+                const searchBarrio = document.getElementById('search-barrio')?.value?.trim()?.toLowerCase() || '';
+                const searchTipoDom = document.getElementById('search-tipo-dom')?.value || '';
+                const searchDomiciliario = document.getElementById('search-delivery-person')?.value || '';
+                const searchMetodoPago = document.getElementById('search-metodo-pago')?.value || '';
+                const searchDatafono = document.getElementById('search-datafono')?.value?.trim() || '';
+                const searchEstadoVoucher = document.getElementById('search-estado-voucher')?.value || '';
+                const searchEstado = document.getElementById('search-estado')?.value || '';
+                const searchFechaDesde = document.getElementById('search-fecha-desde')?.value || '';
+                const searchFechaHasta = document.getElementById('search-fecha-hasta')?.value || '';
 
                 // Obtener todos los pedidos
                 const { data: allOrders, error } = await supabase
