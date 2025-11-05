@@ -947,25 +947,48 @@
 
                 <!-- Resumen General -->
                 <div id="cuadre-summary" style="display: none; margin-bottom: 20px;">
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                                color: white;
-                                padding: 20px;
-                                border-radius: 10px;
-                                margin-bottom: 20px;">
-                        <h4 style="margin-bottom: 15px; color: white;">📊 Resumen del Día</h4>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                            <div>
-                                <div style="font-size: 12px; opacity: 0.9;">Total en Efectivo</div>
-                                <div id="cuadre-total-efectivo" style="font-size: 24px; font-weight: bold;">$0</div>
+                    <h4 style="margin-bottom: 15px; color: #2c3e50;">📊 Resumen del Día</h4>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                        <!-- Card Efectivo -->
+                        <div style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+                                    color: white;
+                                    padding: 20px;
+                                    border-radius: 12px;
+                                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                                    transition: transform 0.2s;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                <div style="font-size: 14px; opacity: 0.9; font-weight: 500;">💵 Total en Efectivo</div>
                             </div>
-                            <div>
-                                <div style="font-size: 12px; opacity: 0.9;">Total en Tarjetas</div>
-                                <div id="cuadre-total-tarjetas" style="font-size: 24px; font-weight: bold;">$0</div>
+                            <div id="cuadre-total-efectivo" style="font-size: 28px; font-weight: bold;">$0</div>
+                            <div style="font-size: 11px; opacity: 0.8; margin-top: 5px;">Arranque + Recaudado</div>
+                        </div>
+
+                        <!-- Card Tarjetas -->
+                        <div style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+                                    color: white;
+                                    padding: 20px;
+                                    border-radius: 12px;
+                                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                                    transition: transform 0.2s;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                <div style="font-size: 14px; opacity: 0.9; font-weight: 500;">💳 Total en Tarjetas</div>
                             </div>
-                            <div>
-                                <div style="font-size: 12px; opacity: 0.9;">Total General</div>
-                                <div id="cuadre-total-general" style="font-size: 28px; font-weight: bold;">$0</div>
+                            <div id="cuadre-total-tarjetas" style="font-size: 28px; font-weight: bold;">$0</div>
+                            <div style="font-size: 11px; opacity: 0.8; margin-top: 5px;">Pagos con datáfono</div>
+                        </div>
+
+                        <!-- Card Total General -->
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                    color: white;
+                                    padding: 20px;
+                                    border-radius: 12px;
+                                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                                    transition: transform 0.2s;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                <div style="font-size: 14px; opacity: 0.9; font-weight: 500;">💰 Total General</div>
                             </div>
+                            <div id="cuadre-total-general" style="font-size: 32px; font-weight: bold;">$0</div>
+                            <div style="font-size: 11px; opacity: 0.8; margin-top: 5px;">Efectivo + Tarjetas</div>
                         </div>
                     </div>
                 </div>
