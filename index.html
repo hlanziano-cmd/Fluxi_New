@@ -427,6 +427,7 @@
         <div class="menu-item" data-module="pedidos">📦 Pedidos</div>
         <div class="menu-item" data-module="consulta">🔍 Consulta de Pedidos</div>
         <div class="menu-item" data-module="dashboard">📊 Reportes</div>
+        <div class="menu-item" data-module="cuadre-caja">💰 Cuadre de Caja</div>
         <div class="menu-item" data-module="configuracion">⚙️ Configuración</div>
     </div>
 
@@ -912,6 +913,101 @@
             </div>
         </div>
 
+        <!-- CUADRE DE CAJA -->
+        <div id="module-cuadre-caja" class="module-container">
+            <div class="card">
+                <div class="card-header">
+                    <h3>💰 Cuadre de Caja</h3>
+                </div>
+                <div id="cuadre-alert"></div>
+
+                <!-- Panel de Filtros -->
+                <div class="card" style="background: #f8f9fa; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 15px;">🔍 Filtros de Consulta</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Fecha de Consulta</label>
+                            <input type="date" id="cuadre-fecha" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                            <small style="color: #666; display: block; margin-top: 5px;">
+                                Selecciona la fecha para ver el cuadre
+                            </small>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Domiciliario</label>
+                            <select id="cuadre-domiciliario" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                                <option value="">Todos los Domiciliarios</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" id="btn-calcular-cuadre">💰 Calcular Cuadre</button>
+                        <button class="btn btn-secondary" id="btn-limpiar-cuadre">🗑️ Limpiar</button>
+                    </div>
+                </div>
+
+                <!-- Resumen General -->
+                <div id="cuadre-summary" style="display: none; margin-bottom: 20px;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                color: white;
+                                padding: 20px;
+                                border-radius: 10px;
+                                margin-bottom: 20px;">
+                        <h4 style="margin-bottom: 15px; color: white;">📊 Resumen del Día</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <div>
+                                <div style="font-size: 12px; opacity: 0.9;">Total en Efectivo</div>
+                                <div id="cuadre-total-efectivo" style="font-size: 24px; font-weight: bold;">$0</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; opacity: 0.9;">Total en Tarjetas</div>
+                                <div id="cuadre-total-tarjetas" style="font-size: 24px; font-weight: bold;">$0</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; opacity: 0.9;">Total Valor Arranque</div>
+                                <div id="cuadre-total-arranque" style="font-size: 24px; font-weight: bold;">$0</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; opacity: 0.9;">Total General</div>
+                                <div id="cuadre-total-general" style="font-size: 28px; font-weight: bold;">$0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Cuadre por Domiciliario -->
+                <div class="table-container" id="cuadre-table-container" style="display: none;">
+                    <table style="font-size: 13px;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: center; font-size: 12px;">Domiciliario</th>
+                                <th style="text-align: center; font-size: 12px;">Valor Arranque</th>
+                                <th style="text-align: center; font-size: 12px;">Efectivo</th>
+                                <th style="text-align: center; font-size: 12px;">Tarjetas (por Datafono)</th>
+                                <th style="text-align: center; font-size: 12px;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuadre-table-body">
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 30px;">
+                                    Selecciona una fecha y haz clic en "Calcular Cuadre"
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mensaje inicial -->
+                <div id="cuadre-initial-message" style="text-align: center; padding: 40px; color: #666;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">💰</div>
+                    <h4 style="color: #666; margin-bottom: 10px;">Cuadre de Caja de Domiciliarios</h4>
+                    <p>Selecciona una fecha y opcionalmente un domiciliario para ver el cuadre de caja.</p>
+                    <p style="font-size: 14px; color: #999;">
+                        Se mostrará: Valor de arranque + Efectivo recaudado + Tarjetas por datafono
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <!-- CONFIGURACIÓN -->
         <div id="module-configuracion" class="module-container">
             <div class="card">
@@ -1265,6 +1361,8 @@
                     }, 100);
                 } else if (moduleName === 'consulta') {
                     setTimeout(() => loadSearchFilters(), 100);
+                } else if (moduleName === 'cuadre-caja') {
+                    setTimeout(() => loadCuadreFilters(), 100);
                 } else if (moduleName === 'configuracion') {
                     setTimeout(() => loadGeneralConfig(), 100);
                 }
@@ -3670,6 +3768,268 @@
 
         // Event listener para guardar hora de reinicio
         document.getElementById('btn-save-reset-time').addEventListener('click', saveResetTime);
+
+        // ============================================
+        // MÓDULO DE CUADRE DE CAJA
+        // ============================================
+
+        /**
+         * Cargar domiciliarios para el filtro de cuadre
+         */
+        async function loadCuadreFilters() {
+            if (!supabase) return;
+            try {
+                const { data: drivers, error } = await supabase
+                    .from('domiciliarios')
+                    .select('*')
+                    .order('nombre');
+
+                if (error) throw error;
+
+                const select = document.getElementById('cuadre-domiciliario');
+                select.innerHTML = '<option value="">Todos los Domiciliarios</option>';
+
+                drivers.forEach(driver => {
+                    const option = document.createElement('option');
+                    option.value = driver.id;
+                    option.textContent = driver.nombre;
+                    select.appendChild(option);
+                });
+
+                // Establecer fecha de hoy por defecto
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('cuadre-fecha').value = today;
+
+                console.log('✅ Filtros de cuadre cargados');
+            } catch (error) {
+                console.error('❌ Error al cargar filtros de cuadre:', error);
+            }
+        }
+
+        /**
+         * Calcular cuadre de caja
+         */
+        async function calcularCuadreCaja() {
+            if (!supabase) return;
+
+            try {
+                const fecha = document.getElementById('cuadre-fecha').value;
+                const domiciliarioId = document.getElementById('cuadre-domiciliario').value;
+
+                if (!fecha) {
+                    showAlert('cuadre-alert', 'error', 'Debe seleccionar una fecha');
+                    return;
+                }
+
+                // Obtener configuración de domiciliarios del día
+                const { data: config, error: configError } = await supabase
+                    .from('configuracion_diaria')
+                    .select('domiciliario_id, valor_arranque')
+                    .eq('fecha', fecha);
+
+                if (configError) throw configError;
+
+                // Obtener pedidos del día
+                const fechaInicio = new Date(fecha);
+                fechaInicio.setHours(0, 0, 0, 0);
+
+                const fechaFin = new Date(fecha);
+                fechaFin.setHours(23, 59, 59, 999);
+
+                let query = supabase
+                    .from('pedidos')
+                    .select('*')
+                    .gte('created_at', fechaInicio.toISOString())
+                    .lte('created_at', fechaFin.toISOString())
+                    .eq('tipo_domiciliario', 'propio')
+                    .in('estado', ['asignado', 'en_camino', 'entregado']);
+
+                if (domiciliarioId) {
+                    query = query.eq('domiciliario_id', domiciliarioId);
+                }
+
+                const { data: pedidos, error: pedidosError } = await query;
+
+                if (pedidosError) throw pedidosError;
+
+                // Obtener información de domiciliarios
+                const { data: allDrivers, error: driversError } = await supabase
+                    .from('domiciliarios')
+                    .select('*');
+
+                if (driversError) throw driversError;
+
+                // Calcular cuadre por domiciliario
+                const cuadrePorDomiciliario = {};
+
+                // Inicializar con configuración del día
+                if (config) {
+                    config.forEach(c => {
+                        const driver = allDrivers.find(d => d.id === c.domiciliario_id);
+                        if (driver) {
+                            cuadrePorDomiciliario[c.domiciliario_id] = {
+                                nombre: driver.nombre,
+                                valorArranque: c.valor_arranque || 0,
+                                efectivo: 0,
+                                tarjetas: {},
+                                totalTarjetas: 0,
+                                total: c.valor_arranque || 0
+                            };
+                        }
+                    });
+                }
+
+                // Procesar pedidos
+                pedidos.forEach(pedido => {
+                    if (!pedido.domiciliario_id) return;
+
+                    // Inicializar si no existe
+                    if (!cuadrePorDomiciliario[pedido.domiciliario_id]) {
+                        const driver = allDrivers.find(d => d.id === pedido.domiciliario_id);
+                        cuadrePorDomiciliario[pedido.domiciliario_id] = {
+                            nombre: driver ? driver.nombre : 'Desconocido',
+                            valorArranque: 0,
+                            efectivo: 0,
+                            tarjetas: {},
+                            totalTarjetas: 0,
+                            total: 0
+                        };
+                    }
+
+                    const cuadre = cuadrePorDomiciliario[pedido.domiciliario_id];
+                    const valorDomicilio = pedido.valor_domicilio || 0;
+
+                    if (pedido.metodo_pago === 'efectivo') {
+                        cuadre.efectivo += valorDomicilio;
+                    } else if (pedido.metodo_pago === 'tarjeta' && pedido.numero_datafono) {
+                        const datafono = pedido.numero_datafono;
+                        if (!cuadre.tarjetas[datafono]) {
+                            cuadre.tarjetas[datafono] = 0;
+                        }
+                        cuadre.tarjetas[datafono] += valorDomicilio;
+                        cuadre.totalTarjetas += valorDomicilio;
+                    }
+
+                    cuadre.total = cuadre.valorArranque + cuadre.efectivo + cuadre.totalTarjetas;
+                });
+
+                // Renderizar resultados
+                renderCuadreCaja(cuadrePorDomiciliario, fecha);
+
+                showAlert('cuadre-alert', 'success', `Cuadre calculado para ${Object.keys(cuadrePorDomiciliario).length} domiciliario(s)`);
+
+            } catch (error) {
+                console.error('❌ Error al calcular cuadre:', error);
+                showAlert('cuadre-alert', 'error', 'Error al calcular cuadre: ' + error.message);
+            }
+        }
+
+        /**
+         * Renderizar cuadre de caja
+         */
+        function renderCuadreCaja(cuadrePorDomiciliario, fecha) {
+            const tbody = document.getElementById('cuadre-table-body');
+            tbody.innerHTML = '';
+
+            // Ocultar mensaje inicial
+            document.getElementById('cuadre-initial-message').style.display = 'none';
+
+            if (Object.keys(cuadrePorDomiciliario).length === 0) {
+                document.getElementById('cuadre-summary').style.display = 'none';
+                document.getElementById('cuadre-table-container').style.display = 'none';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;">No hay domiciliarios activos para esta fecha</td></tr>';
+                return;
+            }
+
+            // Mostrar resumen y tabla
+            document.getElementById('cuadre-summary').style.display = 'block';
+            document.getElementById('cuadre-table-container').style.display = 'block';
+
+            // Calcular totales generales
+            let totalEfectivo = 0;
+            let totalTarjetas = 0;
+            let totalArranque = 0;
+
+            Object.values(cuadrePorDomiciliario).forEach(cuadre => {
+                totalEfectivo += cuadre.efectivo;
+                totalTarjetas += cuadre.totalTarjetas;
+                totalArranque += cuadre.valorArranque;
+            });
+
+            const totalGeneral = totalArranque + totalEfectivo + totalTarjetas;
+
+            // Actualizar resumen
+            document.getElementById('cuadre-total-efectivo').textContent = formatCurrency(totalEfectivo);
+            document.getElementById('cuadre-total-tarjetas').textContent = formatCurrency(totalTarjetas);
+            document.getElementById('cuadre-total-arranque').textContent = formatCurrency(totalArranque);
+            document.getElementById('cuadre-total-general').textContent = formatCurrency(totalGeneral);
+
+            // Renderizar tabla
+            Object.entries(cuadrePorDomiciliario).forEach(([domiciliarioId, cuadre]) => {
+                const row = tbody.insertRow();
+
+                // Nombre del domiciliario
+                const cellNombre = row.insertCell();
+                cellNombre.style.textAlign = 'center';
+                cellNombre.innerHTML = `<strong>${cuadre.nombre}</strong>`;
+
+                // Valor arranque
+                const cellArranque = row.insertCell();
+                cellArranque.style.textAlign = 'center';
+                cellArranque.innerHTML = `<strong>${formatCurrency(cuadre.valorArranque)}</strong>`;
+
+                // Efectivo
+                const cellEfectivo = row.insertCell();
+                cellEfectivo.style.textAlign = 'center';
+                cellEfectivo.innerHTML = `<span style="color: #27ae60; font-weight: bold;">${formatCurrency(cuadre.efectivo)}</span>`;
+
+                // Tarjetas por datafono
+                const cellTarjetas = row.insertCell();
+                cellTarjetas.style.textAlign = 'left';
+                cellTarjetas.style.padding = '10px';
+
+                if (Object.keys(cuadre.tarjetas).length > 0) {
+                    const tarjetasHTML = Object.entries(cuadre.tarjetas)
+                        .map(([datafono, valor]) =>
+                            `<div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #eee;">
+                                <span style="color: #666;">Datafono ${datafono}:</span>
+                                <strong style="color: #3498db;">${formatCurrency(valor)}</strong>
+                            </div>`
+                        )
+                        .join('');
+                    cellTarjetas.innerHTML = tarjetasHTML;
+                } else {
+                    cellTarjetas.innerHTML = '<span style="color: #999;">--</span>';
+                    cellTarjetas.style.textAlign = 'center';
+                }
+
+                // Total
+                const cellTotal = row.insertCell();
+                cellTotal.style.textAlign = 'center';
+                cellTotal.innerHTML = `<strong style="color: #667eea; font-size: 16px;">${formatCurrency(cuadre.total)}</strong>`;
+            });
+        }
+
+        /**
+         * Limpiar cuadre de caja
+         */
+        function limpiarCuadreCaja() {
+            document.getElementById('cuadre-fecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('cuadre-domiciliario').value = '';
+
+            document.getElementById('cuadre-summary').style.display = 'none';
+            document.getElementById('cuadre-table-container').style.display = 'none';
+            document.getElementById('cuadre-initial-message').style.display = 'block';
+
+            const tbody = document.getElementById('cuadre-table-body');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;">Selecciona una fecha y haz clic en "Calcular Cuadre"</td></tr>';
+
+            document.getElementById('cuadre-alert').innerHTML = '';
+        }
+
+        // Event listeners para Cuadre de Caja
+        document.getElementById('btn-calcular-cuadre').addEventListener('click', calcularCuadreCaja);
+        document.getElementById('btn-limpiar-cuadre').addEventListener('click', limpiarCuadreCaja);
 
         loadUsers();
         
