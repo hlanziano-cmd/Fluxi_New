@@ -3851,10 +3851,17 @@
                 }
 
                 // Obtener configuración de domiciliarios del día
-                const { data: config, error: configError } = await supabase
+                let configQuery = supabase
                     .from('configuracion_diaria')
                     .select('domiciliario_id, valor_arranque')
                     .eq('fecha', fecha);
+
+                // Filtrar por domiciliario si está seleccionado
+                if (domiciliarioId) {
+                    configQuery = configQuery.eq('domiciliario_id', domiciliarioId);
+                }
+
+                const { data: config, error: configError } = await configQuery;
 
                 if (configError) throw configError;
 
