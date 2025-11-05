@@ -665,7 +665,7 @@
                             <select id="search-metodo-pago" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
                                 <option value="">Todos</option>
                                 <option value="efectivo">Efectivo</option>
-                                <option value="tarjeta">Tarjeta</option>
+                                <option value="datafono">Datáfono</option>
                             </select>
                         </div>
                         <div>
@@ -780,7 +780,7 @@
                         <select id="filter-payment-method" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
                             <option value="">Todos</option>
                             <option value="efectivo">Efectivo</option>
-                            <option value="tarjeta">Tarjeta</option>
+                            <option value="datafono">Datáfono</option>
                         </select>
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
@@ -971,7 +971,7 @@
                                     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
                                     transition: transform 0.2s;">
                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                                <div style="font-size: 14px; opacity: 0.9; font-weight: 500;">💳 Total en Tarjetas</div>
+                                <div style="font-size: 14px; opacity: 0.9; font-weight: 500;">💳 Total en Datáfono</div>
                             </div>
                             <div id="cuadre-total-tarjetas" style="font-size: 28px; font-weight: bold;">$0</div>
                             <div style="font-size: 11px; opacity: 0.8; margin-top: 5px;">Pagos con datáfono</div>
@@ -988,7 +988,7 @@
                                 <div style="font-size: 14px; opacity: 0.9; font-weight: 500;">💰 Total General</div>
                             </div>
                             <div id="cuadre-total-general" style="font-size: 32px; font-weight: bold;">$0</div>
-                            <div style="font-size: 11px; opacity: 0.8; margin-top: 5px;">Efectivo + Tarjetas</div>
+                            <div style="font-size: 11px; opacity: 0.8; margin-top: 5px;">Efectivo + Datáfono</div>
                         </div>
                     </div>
                 </div>
@@ -1002,7 +1002,7 @@
                                 <th style="text-align: center; font-size: 12px;">Valor Arranque</th>
                                 <th style="text-align: center; font-size: 12px;">Efectivo Pedidos</th>
                                 <th style="text-align: center; font-size: 12px;">Total Efectivo</th>
-                                <th style="text-align: center; font-size: 12px;">Tarjetas (por Datafono)</th>
+                                <th style="text-align: center; font-size: 12px;">Datáfono</th>
                                 <th style="text-align: center; font-size: 12px;">Total</th>
                             </tr>
                         </thead>
@@ -1022,7 +1022,7 @@
                     <h4 style="color: #666; margin-bottom: 10px;">Cuadre de Caja de Domiciliarios</h4>
                     <p>Selecciona una fecha y opcionalmente un domiciliario para ver el cuadre de caja.</p>
                     <p style="font-size: 14px; color: #999;">
-                        Se mostrará: Valor de arranque + Efectivo recaudado + Tarjetas por datafono
+                        Se mostrará: Valor de arranque + Efectivo recaudado + Datáfono
                     </p>
                 </div>
             </div>
@@ -1199,7 +1199,7 @@
                     <select id="order-payment-method" required>
                         <option value="">Seleccionar...</option>
                         <option value="efectivo">Efectivo</option>
-                        <option value="tarjeta">Tarjeta</option>
+                        <option value="datafono">Datáfono</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -2009,7 +2009,7 @@
                 metodoPagoSelect.style.width = '100%';
                 metodoPagoSelect.innerHTML = `
                     <option value="efectivo">Efectivo</option>
-                    <option value="tarjeta">Tarjeta</option>
+                    <option value="datafono">Datáfono</option>
                 `;
                 metodoPagoSelect.value = order.metodo_pago || 'efectivo';
                 metodoPagoSelect.onchange = () => updatePaymentMethod(order.id, metodoPagoSelect.value);
@@ -3469,7 +3469,7 @@
                     <td><strong>${formatCurrency(order.valor_pedido + order.valor_domicilio)}</strong></td>
                     <td>${order.domiciliario_nombre || 'Sin asignar'}</td>
                     <td>${order.numero_datafono || '--'}</td>
-                    <td>${order.metodo_pago === 'efectivo' ? 'Efectivo' : order.metodo_pago === 'tarjeta' ? 'Tarjeta' : '--'}</td>
+                    <td>${order.metodo_pago === 'efectivo' ? 'Efectivo' : order.metodo_pago === 'datafono' ? 'Datáfono' : '--'}</td>
                     <td></td>
                     <td>${order.tiempo_aceptacion ? calculateElapsedTime(order.tiempo_aceptacion) : '--'}</td>
                 `;
@@ -3701,7 +3701,7 @@
                     <td style="text-align: center;"><strong>${formatCurrency(order.valor_pedido + order.valor_domicilio)}</strong></td>
                     <td style="text-align: center;">${order.tipo_domiciliario ? (order.tipo_domiciliario === 'propio' ? 'Propio' : 'Rappi') : '--'}</td>
                     <td style="text-align: center;">${order.domiciliario_nombre || '--'}</td>
-                    <td style="text-align: center;">${order.metodo_pago === 'efectivo' ? 'Efectivo' : order.metodo_pago === 'tarjeta' ? 'Tarjeta' : '--'}</td>
+                    <td style="text-align: center;">${order.metodo_pago === 'efectivo' ? 'Efectivo' : order.metodo_pago === 'datafono' ? 'Datáfono' : '--'}</td>
                     <td style="text-align: center;">${order.numero_datafono || '--'}</td>
                     <td style="text-align: center;"></td>
                     <td style="text-align: center;"></td>
@@ -4033,7 +4033,7 @@
                 if (pedidosError) throw pedidosError;
 
                 console.log(`📦 Pedidos encontrados para ${fecha}:`, pedidos.length);
-                console.log('Pedidos con tarjeta:', pedidos.filter(p => p.metodo_pago === 'tarjeta').length);
+                console.log('Pedidos con datáfono:', pedidos.filter(p => p.metodo_pago === 'datafono').length);
 
                 // Obtener información de domiciliarios
                 const { data: allDrivers, error: driversError } = await supabase
@@ -4084,7 +4084,7 @@
 
                     if (pedido.metodo_pago === 'efectivo') {
                         cuadre.efectivo += valorDomicilio;
-                    } else if (pedido.metodo_pago === 'tarjeta') {
+                    } else if (pedido.metodo_pago === 'datafono') {
                         if (pedido.numero_datafono) {
                             const datafono = pedido.numero_datafono;
                             if (!cuadre.tarjetas[datafono]) {
@@ -4092,9 +4092,9 @@
                             }
                             cuadre.tarjetas[datafono] += valorDomicilio;
                             cuadre.totalTarjetas += valorDomicilio;
-                            console.log(`💳 Tarjeta procesada - Domiciliario: ${cuadre.nombre}, Datafono: ${datafono}, Valor: ${valorDomicilio}`);
+                            console.log(`💳 Datáfono procesado - Domiciliario: ${cuadre.nombre}, Datáfono: ${datafono}, Valor: ${valorDomicilio}`);
                         } else {
-                            console.warn(`⚠️ Pedido con tarjeta sin datafono:`, pedido.id, pedido.cliente);
+                            console.warn(`⚠️ Pedido con datáfono sin número:`, pedido.id, pedido.cliente);
                         }
                     }
 

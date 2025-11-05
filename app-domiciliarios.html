@@ -695,7 +695,7 @@
                         <div id="balance-total-efectivo" style="font-size: 24px; font-weight: bold;">$0</div>
                     </div>
 
-                    <!-- Tarjetas por Datáfono -->
+                    <!-- Pagos con Datáfono -->
                     <div style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
                                 color: white;
                                 padding: 15px;
@@ -715,7 +715,7 @@
                                 box-shadow: 0 3px 8px rgba(0,0,0,0.15);">
                         <div style="font-size: 13px; opacity: 0.9; margin-bottom: 5px;">💎 Total General</div>
                         <div id="balance-total-general" style="font-size: 28px; font-weight: bold;">$0</div>
-                        <div style="font-size: 11px; opacity: 0.8; margin-top: 5px;">Efectivo + Tarjetas</div>
+                        <div style="font-size: 11px; opacity: 0.8; margin-top: 5px;">Efectivo + Datáfono</div>
                     </div>
                 </div>
 
@@ -1740,7 +1740,7 @@
                         </div>
                         <div class="order-detail-row">
                             <div class="order-detail-label">💳 Pago:</div>
-                            <div class="order-detail-value">${order.metodo_pago === 'efectivo' ? 'Efectivo' : 'Tarjeta'}</div>
+                            <div class="order-detail-value">${order.metodo_pago === 'efectivo' ? 'Efectivo' : 'Datáfono'}</div>
                         </div>
                         ${order.notas ? `
                         <div class="order-detail-row">
@@ -1818,7 +1818,7 @@
                         </div>
                         <div class="order-detail-row">
                             <div class="order-detail-label">💳 Pago:</div>
-                            <div class="order-detail-value">${order.metodo_pago === 'efectivo' ? 'Efectivo' : 'Tarjeta'}</div>
+                            <div class="order-detail-value">${order.metodo_pago === 'efectivo' ? 'Efectivo' : 'Datáfono'}</div>
                         </div>
                     </div>
                     ${!isLocationActive ? `
@@ -1942,9 +1942,9 @@
                     .gte('created_at', fechaInicio.toISOString())
                     .lte('created_at', fechaFin.toISOString());
 
-                // Calcular efectivo y tarjetas
+                // Calcular efectivo y datáfono
                 let efectivoRecaudado = 0;
-                let tarjetasTotal = 0;
+                let datafonoTotal = 0;
                 let numeroDatafono = null;
 
                 (pedidosEntregados || []).forEach(pedido => {
@@ -1952,8 +1952,8 @@
 
                     if (pedido.metodo_pago === 'efectivo') {
                         efectivoRecaudado += valorDomicilio;
-                    } else if (pedido.metodo_pago === 'tarjeta') {
-                        tarjetasTotal += valorDomicilio;
+                    } else if (pedido.metodo_pago === 'datafono') {
+                        datafonoTotal += valorDomicilio;
                         if (pedido.numero_datafono && !numeroDatafono) {
                             numeroDatafono = pedido.numero_datafono;
                         }
@@ -1961,13 +1961,13 @@
                 });
 
                 const totalEfectivo = valorArranque + efectivoRecaudado;
-                const totalGeneral = totalEfectivo + tarjetasTotal;
+                const totalGeneral = totalEfectivo + datafonoTotal;
 
                 // Actualizar UI
                 document.getElementById('balance-arranque').textContent = formatCurrency(valorArranque);
                 document.getElementById('balance-efectivo').textContent = formatCurrency(efectivoRecaudado);
                 document.getElementById('balance-total-efectivo').textContent = formatCurrency(totalEfectivo);
-                document.getElementById('balance-tarjetas').textContent = formatCurrency(tarjetasTotal);
+                document.getElementById('balance-tarjetas').textContent = formatCurrency(datafonoTotal);
                 document.getElementById('balance-total-general').textContent = formatCurrency(totalGeneral);
 
                 // Actualizar info del datáfono
@@ -1984,7 +1984,7 @@
                     valorArranque,
                     efectivoRecaudado,
                     totalEfectivo,
-                    tarjetasTotal,
+                    datafonoTotal,
                     totalGeneral,
                     numeroDatafono
                 });
