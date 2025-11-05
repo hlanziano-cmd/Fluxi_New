@@ -3234,11 +3234,11 @@
             
             if (dateFrom && dateTo) {
                 // Si hay rango definido, usar ese rango
-                const startDate = new Date(dateFrom);
-                const endDate = new Date(dateTo);
+                const startDate = new Date(dateFrom + 'T12:00:00');
+                const endDate = new Date(dateTo + 'T12:00:00');
                 const diffTime = Math.abs(endDate - startDate);
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
+
                 for (let i = 0; i <= diffDays; i++) {
                     const date = new Date(startDate);
                     date.setDate(startDate.getDate() + i);
