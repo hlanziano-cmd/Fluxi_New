@@ -2149,7 +2149,7 @@
                 }
 
                 await supabase.from('pedidos').update(updateData).eq('id', orderId);
-                showAlert('orders-alert', 'success', 'Tipo de domiciliario actualizado');
+                // No mostrar alerta para no interrumpir la edición
 
                 // Recargar la fila completa
                 loadOrders();
@@ -2179,7 +2179,7 @@
                 }
 
                 await supabase.from('pedidos').update(updateData).eq('id', orderId);
-                showAlert('orders-alert', 'success', 'Domiciliario actualizado');
+                // No mostrar alerta para no interrumpir la edición
 
                 // Actualizar el array local
                 const orderIndex = allOrders.findIndex(o => o.id === orderId);
@@ -2200,7 +2200,7 @@
                 };
 
                 await supabase.from('pedidos').update(updateData).eq('id', orderId);
-                showAlert('orders-alert', 'success', 'Datafono actualizado');
+                // No mostrar alerta para no interrumpir la edición
 
                 // Actualizar el array local
                 const orderIndex = allOrders.findIndex(o => o.id === orderId);
@@ -2907,19 +2907,21 @@
                 valor_domicilio: parseFormattedNumber(document.getElementById('order-delivery-fee').value),
                 metodo_pago: document.getElementById('order-payment-method').value,
                 notas: document.getElementById('order-notes').value,
-                updated_at: new Date().toISOString(),
-                estado: 'pendiente'
+                updated_at: new Date().toISOString()
                 // Los campos de domiciliario se asignarán posteriormente en el módulo de gestión
             }
-            
+
             try {
                 let orderId;
                 if (currentOrderId) {
+                    // Al editar, NO cambiar el estado del pedido
                     const { data, error } = await supabase.from('pedidos').update(orderData).eq('id', currentOrderId);
                     if (error) throw error;
                     orderId = currentOrderId;
                     showAlert('orders-alert', 'success', 'Pedido actualizado');
                 } else {
+                    // Solo al crear un nuevo pedido, establecer estado como pendiente
+                    orderData.estado = 'pendiente';
                     orderData.created_at = new Date().toISOString();
                     const { data, error } = await supabase.from('pedidos').insert([orderData]).select();
                     if (error) {
@@ -2935,7 +2937,9 @@
                         .update({ estado: 'ocupado' })
                         .eq('id', orderData.domiciliario_id);
 
-                    sendWhatsAppNotification(orderData.domiciliario_telefono, orderData.domiciliario_nombre);
+                    // Si hay consecutivo, incluirlo en la notificación
+                    const consecutivo = orderData.consecutivo_dia || '?';
+                    sendWhatsAppNotification(orderData.domiciliario_telefono, orderData.domiciliario_nombre, consecutivo);
                 }
 
                 closeOrderModal();
