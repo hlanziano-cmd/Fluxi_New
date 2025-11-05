@@ -1749,16 +1749,16 @@
                     </div>
                     <div class="action-buttons">
                         ${order.estado === 'asignado' ? `
-                            <button class="btn btn-success" onclick="window.startDeliveryRoute('${order.id}')">
-                                🚀 Iniciar Ruta
+                            <button class="btn btn-success" onclick="window.startDeliveryRoute('${order.id}')" style="width: 100%; margin-bottom: 10px;">
+                                🚀 Iniciar Entrega
                             </button>
                         ` : ''}
                         ${order.estado === 'en_camino' ? `
-                            <button class="btn btn-primary" onclick="window.completeDelivery('${order.id}')">
+                            <button class="btn btn-primary" onclick="window.completeDelivery('${order.id}')" style="width: 100%; margin-bottom: 10px;">
                                 ✅ Marcar Entregado
                             </button>
                         ` : ''}
-                        <button class="btn btn-danger" onclick="window.cancelOrder('${order.id}')" style="margin-top: 10px;">
+                        <button class="btn btn-danger" onclick="window.cancelOrder('${order.id}')" style="width: 100%; margin-bottom: 10px;">
                             ❌ Cancelar Pedido
                         </button>
                     </div>
@@ -2088,16 +2088,16 @@
         };
 
         /**
-         * Iniciar ruta de entrega - Cuando hay múltiples pedidos, todos inician juntos
+         * Iniciar entrega - Cuando hay múltiples pedidos, todos inician juntos
          */
         window.startDeliveryRoute = async function(triggeredOrderId) {
-            console.log('🚀 ========== INICIANDO RUTA DE ENTREGA ==========');
-            console.log('   - Pedido que disparó la ruta:', triggeredOrderId);
+            console.log('🚀 ========== INICIANDO ENTREGA ==========');
+            console.log('   - Pedido que disparó la entrega:', triggeredOrderId);
 
             // 🔒 VALIDACIÓN: Verificar que la ubicación esté activa
             if (!isLocationActive) {
-                console.warn('⚠️ Intento de iniciar ruta sin ubicación activa');
-                showAlert('⚠️ Debes tener la ubicación activada para iniciar la ruta. Por favor activa tu ubicación primero.', 'warning');
+                console.warn('⚠️ Intento de iniciar entrega sin ubicación activa');
+                showAlert('⚠️ Debes tener la ubicación activada para iniciar la entrega. Por favor activa tu ubicación primero.', 'warning');
                 return;
             }
 
@@ -2117,6 +2117,12 @@
                     .eq('estado', 'asignado');
 
                 if (fetchError) throw fetchError;
+
+                if (!pedidosAsignados || pedidosAsignados.length === 0) {
+                    console.warn('⚠️ No se encontraron pedidos asignados');
+                    showAlert('⚠️ No tienes pedidos asignados para iniciar entrega.', 'warning');
+                    return;
+                }
 
                 console.log(`   - Se encontraron ${pedidosAsignados.length} pedido(s) asignado(s)`);
                 console.log('   - Pedidos:', pedidosAsignados.map(p => p.id.substring(0, 8)));
@@ -2144,16 +2150,20 @@
                 // Iniciar el temporizador compartido
                 startTimer(startTime);
 
-                showAlert(`✅ ¡Ruta iniciada! ${updatedOrders.length} pedido(s) en camino. El temporizador está corriendo.`, 'success');
+                const mensajeExito = updatedOrders.length > 1
+                    ? `✅ ¡Entrega iniciada! ${updatedOrders.length} pedidos en camino. El temporizador está corriendo.`
+                    : `✅ ¡Entrega iniciada! El temporizador está corriendo.`;
+
+                showAlert(mensajeExito, 'success');
 
                 console.log('🔄 Recargando pedidos...');
                 await loadOrders();
-                console.log('✅ ========== RUTA INICIADA EXITOSAMENTE ==========');
+                console.log('✅ ========== ENTREGA INICIADA EXITOSAMENTE ==========');
 
             } catch (error) {
-                console.error('❌ ========== ERROR AL INICIAR RUTA ==========');
+                console.error('❌ ========== ERROR AL INICIAR ENTREGA ==========');
                 console.error('Error completo:', error);
-                showAlert('❌ Error al iniciar ruta: ' + error.message, 'danger');
+                showAlert('❌ Error al iniciar entrega: ' + error.message, 'danger');
             } finally {
                 // Rehabilitar botones
                 buttons.forEach(btn => btn.disabled = false);
