@@ -1832,19 +1832,15 @@
          */
         async function updateOrdersDateDisplay() {
             try {
-                // Obtener fecha actual en hora Colombia
-                const nowUTC = new Date();
-                const colombiaOffsetMs = -5 * 60 * 60 * 1000;
-                const nowColombia = new Date(nowUTC.getTime() + colombiaOffsetMs);
-
-                // Formatear fecha para mostrar
+                // Obtener fecha actual en hora Colombia usando la zona horaria correcta
                 const options = {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
+                    timeZone: 'America/Bogota'
                 };
-                const dateString = nowColombia.toLocaleDateString('es-CO', options);
+                const dateString = new Date().toLocaleDateString('es-CO', options);
 
                 // Capitalizar primera letra
                 const formattedDate = dateString.charAt(0).toUpperCase() + dateString.slice(1);
@@ -3790,25 +3786,32 @@
          * Retorna el timestamp del reinicio del DÍA ACTUAL en hora Colombia
          */
         function getTodayResetTimestampFromTime(timeString) {
-            // Obtener hora actual en Colombia
-            const nowUTC = new Date();
-            const colombiaOffsetMs = -5 * 60 * 60 * 1000; // UTC-5 en milisegundos
-            const nowColombia = new Date(nowUTC.getTime() + colombiaOffsetMs);
-
             // Extraer hora y minuto de la configuración
             const [hours, minutes] = timeString.split(':').map(Number);
 
-            // Crear timestamp del reinicio de HOY en hora Colombia
-            const resetDateColombia = new Date(nowColombia);
-            resetDateColombia.setHours(hours, minutes, 0, 0);
+            // Obtener la fecha y hora actual
+            const now = new Date();
 
-            // Convertir de vuelta a UTC para almacenar en base de datos
-            const resetDateUTC = new Date(resetDateColombia.getTime() - colombiaOffsetMs);
+            // Obtener los componentes de la fecha actual en Colombia
+            const colombiaDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+
+            // Crear la fecha de reinicio para HOY en hora Colombia
+            const year = colombiaDate.getFullYear();
+            const month = colombiaDate.getMonth();
+            const day = colombiaDate.getDate();
+
+            // Crear fecha de reinicio en hora local de Colombia
+            // Esto crea una fecha interpretada en la zona horaria LOCAL del navegador
+            const resetDateLocal = new Date(year, month, day, hours, minutes, 0, 0);
+
+            // Convertir a UTC: Colombia es UTC-5, así que sumamos 5 horas
+            const resetDateUTC = new Date(resetDateLocal.getTime() + (5 * 60 * 60 * 1000));
 
             console.log(`⏰ Hora de reinicio calculada:`, {
                 horaConfiguracion: timeString,
-                reinicioHoraColombia: resetDateColombia.toISOString(),
-                reinicioUTC: resetDateUTC.toISOString()
+                fechaHoraColombia: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`,
+                reinicioUTC: resetDateUTC.toISOString(),
+                horaActualColombia: colombiaDate.toLocaleString('es-CO', { timeZone: 'America/Bogota' })
             });
 
             return resetDateUTC.toISOString();
