@@ -1934,19 +1934,25 @@
 
                 const valorArranque = config?.valor_arranque || 0;
 
-                // Obtener pedidos entregados desde las 8 AM del día laboral actual
+                // Obtener pedidos desde las 8 AM del día laboral actual
+                // Incluir: asignado, en_camino, entregado (igual que Index)
                 const { data: pedidosEntregados } = await supabase
                     .from('pedidos')
                     .select('*')
                     .eq('domiciliario_id', currentDelivery.id)
-                    .eq('estado', 'entregado')
+                    .in('estado', ['asignado', 'en_camino', 'entregado'])
                     .gte('created_at', fechaInicio.toISOString())
                     .lte('created_at', fechaFin.toISOString());
 
-                console.log('📊 Pedidos entregados encontrados:', pedidosEntregados?.length || 0);
+                console.log('📊 Pedidos encontrados (asignado/en_camino/entregado):', pedidosEntregados?.length || 0);
                 console.log('📊 Rango de fechas:', {
                     inicio: fechaInicio.toISOString(),
                     fin: fechaFin.toISOString()
+                });
+                console.log('📊 Pedidos por estado:', {
+                    asignado: pedidosEntregados?.filter(p => p.estado === 'asignado').length || 0,
+                    en_camino: pedidosEntregados?.filter(p => p.estado === 'en_camino').length || 0,
+                    entregado: pedidosEntregados?.filter(p => p.estado === 'entregado').length || 0
                 });
 
                 // Calcular efectivo y datáfono
