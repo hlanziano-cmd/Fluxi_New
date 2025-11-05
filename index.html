@@ -2357,38 +2357,51 @@
                 console.log('   - Reset timestamp:', new Date(resetTimestamp).toLocaleString('es-CO', { timeZone: 'America/Bogota' }));
                 console.log('   - Reset timestamp ms:', resetTimestampMs);
 
-                // Buscar todos los pedidos asignados HOY a este domiciliario
-                // Usamos tiempo_aceptacion porque es cuando se asigna el pedido
-                const { data, error } = await supabase
+                // PASO 1: Buscar pedidos que YA TIENEN consecutivo
+                const { data: pedidosConConsecutivo, error: error1 } = await supabase
                     .from('pedidos')
-                    .select('consecutivo_dia, tiempo_aceptacion')
+                    .select('consecutivo_dia')
                     .eq('domiciliario_id', domiciliarioId)
                     .not('tiempo_aceptacion', 'is', null)
+                    .not('consecutivo_dia', 'is', null)
                     .gte('tiempo_aceptacion', resetTimestampMs)
                     .order('consecutivo_dia', { ascending: false })
                     .limit(1);
 
-                if (error) {
-                    console.error('❌ Error en query de consecutivo:', error);
-                    throw error;
+                if (error1) {
+                    console.error('❌ Error en query de consecutivo:', error1);
+                    throw error1;
                 }
 
-                console.log('   - Pedidos encontrados:', data?.length || 0);
-                if (data && data.length > 0) {
-                    console.log('   - Último consecutivo:', data[0].consecutivo_dia);
-                    console.log('   - Tiempo aceptación:', new Date(data[0].tiempo_aceptacion).toLocaleString('es-CO', { timeZone: 'America/Bogota' }));
-                }
-
-                // Si este domiciliario tiene pedidos asignados hoy, incrementar su consecutivo
-                if (data && data.length > 0 && data[0].consecutivo_dia) {
-                    const nextConsecutivo = data[0].consecutivo_dia + 1;
+                // Si hay pedidos con consecutivo, usar el último + 1
+                if (pedidosConConsecutivo && pedidosConConsecutivo.length > 0) {
+                    const ultimoConsecutivo = pedidosConConsecutivo[0].consecutivo_dia;
+                    const nextConsecutivo = ultimoConsecutivo + 1;
+                    console.log('   - Último consecutivo encontrado:', ultimoConsecutivo);
                     console.log('   ✅ Siguiente consecutivo:', nextConsecutivo);
                     return nextConsecutivo;
                 }
 
-                // Si este domiciliario no tiene pedidos asignados hoy, empezar en 1
-                console.log('   ✅ Primer pedido del día, consecutivo: 1');
-                return 1;
+                // PASO 2: Si no hay pedidos con consecutivo, contar TODOS los pedidos asignados hoy
+                const { data: todosPedidos, error: error2 } = await supabase
+                    .from('pedidos')
+                    .select('id', { count: 'exact', head: false })
+                    .eq('domiciliario_id', domiciliarioId)
+                    .not('tiempo_aceptacion', 'is', null)
+                    .gte('tiempo_aceptacion', resetTimestampMs);
+
+                if (error2) {
+                    console.error('❌ Error al contar pedidos:', error2);
+                    throw error2;
+                }
+
+                const cantidadPedidos = todosPedidos?.length || 0;
+                const nextConsecutivo = cantidadPedidos + 1;
+
+                console.log('   - Pedidos asignados hoy (sin consecutivo):', cantidadPedidos);
+                console.log('   ✅ Siguiente consecutivo:', nextConsecutivo);
+
+                return nextConsecutivo;
             } catch (error) {
                 console.error('❌ Error al obtener consecutivo:', error);
                 // En caso de error, usar timestamp como fallback
@@ -3841,7 +3854,7 @@
          * Obtener timestamp de reinicio del día actual en hora Colombia
          */
         async function getTodayResetTimestamp() {
-            if (!supabase) return null;
+            if (!supabase) return getTodayResetTimestampFromTime('08:00');
 
             try {
                 const { data, error } = await supabase
@@ -3849,14 +3862,21 @@
                     .select('hora_reinicio')
                     .single();
 
-                if (error || !data) {
+                if (error) {
+                    // Si hay error (ej: tabla no existe), usar 08:00 por defecto
+                    console.warn('⚠️ No se pudo obtener hora_reinicio, usando 08:00 por defecto');
+                    return getTodayResetTimestampFromTime('08:00');
+                }
+
+                if (!data) {
                     // Si no hay configuración, usar 08:00 por defecto
+                    console.warn('⚠️ No hay configuración, usando 08:00 por defecto');
                     return getTodayResetTimestampFromTime('08:00');
                 }
 
                 return getTodayResetTimestampFromTime(data.hora_reinicio);
             } catch (error) {
-                console.error('❌ Error al obtener timestamp de reinicio:', error);
+                console.warn('⚠️ Error al obtener timestamp de reinicio, usando 08:00 por defecto:', error);
                 return getTodayResetTimestampFromTime('08:00');
             }
         }
