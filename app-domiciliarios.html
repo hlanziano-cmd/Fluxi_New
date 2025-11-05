@@ -1831,26 +1831,51 @@
         }
 
         async function updateStats() {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            // Calcular inicio del día laboral (8 AM hoy en Colombia)
+            const ahora = new Date();
+            const today = new Date().toISOString().split('T')[0];
+            const inicioDiaLaboral = new Date(today + 'T08:00:00');
 
+            let fechaInicio;
+            if (ahora < inicioDiaLaboral) {
+                // Antes de las 8 AM, usar 8 AM de ayer
+                const ayer = new Date(ahora);
+                ayer.setDate(ayer.getDate() - 1);
+                const ayerStr = ayer.toISOString().split('T')[0];
+                fechaInicio = new Date(ayerStr + 'T08:00:00');
+            } else {
+                // Después de las 8 AM, usar 8 AM de hoy
+                fechaInicio = inicioDiaLaboral;
+            }
+
+            const fechaFin = new Date();
+
+            console.log('📊 Calculando estadísticas desde:', fechaInicio.toLocaleString('es-CO'));
+
+            // Obtener solo pedidos desde las 8 AM del día laboral actual
             const { data: allOrders } = await supabase
                 .from('pedidos')
                 .select('*')
-                .eq('domiciliario_id', currentDelivery.id);
+                .eq('domiciliario_id', currentDelivery.id)
+                .gte('created_at', fechaInicio.toISOString())
+                .lte('created_at', fechaFin.toISOString());
 
-            const todayOrders = (allOrders || []).filter(o => 
-                new Date(o.created_at) >= today
-            );
+            const todayOrders = allOrders || [];
 
-            const completed = (allOrders || []).filter(o => o.estado === 'entregado').length;
-            const active = (allOrders || []).filter(o => 
+            const completed = todayOrders.filter(o => o.estado === 'entregado').length;
+            const active = todayOrders.filter(o =>
                 o.estado === 'asignado' || o.estado === 'en_camino'
             ).length;
 
             document.getElementById('orders-today').textContent = todayOrders.length;
             document.getElementById('orders-completed').textContent = completed;
             document.getElementById('orders-active').textContent = active;
+
+            console.log('📊 Estadísticas actualizadas:', {
+                total: todayOrders.length,
+                completados: completed,
+                activos: active
+            });
 
             // Actualizar cuadre de caja
             await updateCashBalance();
@@ -2093,10 +2118,14 @@
         window.startDeliveryRoute = async function(triggeredOrderId) {
             console.log('🚀 ========== INICIANDO ENTREGA ==========');
             console.log('   - Pedido que disparó la entrega:', triggeredOrderId);
+            console.log('   - Estado de ubicación (isLocationActive):', isLocationActive);
 
             // 🔒 VALIDACIÓN: Verificar que la ubicación esté activa
             if (!isLocationActive) {
                 console.warn('⚠️ Intento de iniciar entrega sin ubicación activa');
+                console.warn('   - isLocationActive:', isLocationActive);
+                console.warn('   - locationWatchId:', locationWatchId);
+                console.warn('   - locationUpdateInterval:', locationUpdateInterval);
                 showAlert('⚠️ Debes tener la ubicación activada para iniciar la entrega. Por favor activa tu ubicación primero.', 'warning');
                 return;
             }
