@@ -3783,35 +3783,44 @@
 
         /**
          * Calcular timestamp de reinicio para una hora específica
-         * Retorna el timestamp del reinicio del DÍA ACTUAL en hora Colombia
+         * Retorna el timestamp del reinicio del DÍA ACTUAL en hora Colombia (siempre 8 AM)
          */
         function getTodayResetTimestampFromTime(timeString) {
             // Extraer hora y minuto de la configuración
             const [hours, minutes] = timeString.split(':').map(Number);
 
-            // Obtener la fecha y hora actual
-            const now = new Date();
+            // Obtener la fecha actual en Colombia usando Intl.DateTimeFormat
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/Bogota',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
 
-            // Obtener los componentes de la fecha actual en Colombia
-            const colombiaDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+            const parts = formatter.formatToParts(new Date());
+            const dateObj = {};
+            parts.forEach(({ type, value }) => {
+                dateObj[type] = value;
+            });
 
-            // Crear la fecha de reinicio para HOY en hora Colombia
-            const year = colombiaDate.getFullYear();
-            const month = colombiaDate.getMonth();
-            const day = colombiaDate.getDate();
+            console.log('📅 Fecha actual en Colombia:', dateObj);
 
-            // Crear fecha de reinicio en hora local de Colombia
-            // Esto crea una fecha interpretada en la zona horaria LOCAL del navegador
-            const resetDateLocal = new Date(year, month, day, hours, minutes, 0, 0);
+            // Construir string de fecha en formato ISO para el reinicio de HOY en Colombia
+            const resetColombiaString = `${dateObj.year}-${dateObj.month}-${dateObj.day}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00-05:00`;
 
-            // Convertir a UTC: Colombia es UTC-5, así que sumamos 5 horas
-            const resetDateUTC = new Date(resetDateLocal.getTime() + (5 * 60 * 60 * 1000));
+            // Convertir a Date - esto maneja automáticamente el offset
+            const resetDateUTC = new Date(resetColombiaString);
 
             console.log(`⏰ Hora de reinicio calculada:`, {
                 horaConfiguracion: timeString,
-                fechaHoraColombia: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`,
+                fechaHoraColombia: `${dateObj.year}-${dateObj.month}-${dateObj.day} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`,
+                stringConOffset: resetColombiaString,
                 reinicioUTC: resetDateUTC.toISOString(),
-                horaActualColombia: colombiaDate.toLocaleString('es-CO', { timeZone: 'America/Bogota' })
+                timestampUTC: resetDateUTC.getTime()
             });
 
             return resetDateUTC.toISOString();
