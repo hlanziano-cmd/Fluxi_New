@@ -651,6 +651,67 @@
 
                 <div id="alert-container"></div>
 
+                <!-- Cash Balance Section -->
+                <div id="cash-balance-section" style="margin: 20px 0;">
+                    <h2 style="margin-bottom: 15px; color: #2c3e50;">💰 Mi Cuadre de Caja</h2>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                        <!-- Valor Arranque -->
+                        <div style="background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+                                    color: white;
+                                    padding: 15px;
+                                    border-radius: 10px;
+                                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <div style="font-size: 11px; opacity: 0.9; margin-bottom: 5px;">💵 Valor Arranque</div>
+                            <div id="balance-arranque" style="font-size: 20px; font-weight: bold;">$0</div>
+                        </div>
+
+                        <!-- Efectivo Recaudado -->
+                        <div style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+                                    color: white;
+                                    padding: 15px;
+                                    border-radius: 10px;
+                                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <div style="font-size: 11px; opacity: 0.9; margin-bottom: 5px;">💵 Efectivo Recaudado</div>
+                            <div id="balance-efectivo" style="font-size: 20px; font-weight: bold;">$0</div>
+                        </div>
+                    </div>
+
+                    <!-- Total Efectivo -->
+                    <div style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+                                color: white;
+                                padding: 15px;
+                                border-radius: 10px;
+                                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                                margin-bottom: 15px;">
+                        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 5px;">💰 Total Efectivo (Arranque + Recaudado)</div>
+                        <div id="balance-total-efectivo" style="font-size: 24px; font-weight: bold;">$0</div>
+                    </div>
+
+                    <!-- Tarjetas por Datáfono -->
+                    <div style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+                                color: white;
+                                padding: 15px;
+                                border-radius: 10px;
+                                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                                margin-bottom: 15px;">
+                        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">💳 Pagos con Datáfono</div>
+                        <div id="balance-datafono-info" style="font-size: 13px; opacity: 0.9; margin-bottom: 5px;">Datáfono: --</div>
+                        <div id="balance-tarjetas" style="font-size: 22px; font-weight: bold;">$0</div>
+                    </div>
+
+                    <!-- Total General -->
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                color: white;
+                                padding: 18px;
+                                border-radius: 10px;
+                                box-shadow: 0 3px 8px rgba(0,0,0,0.15);">
+                        <div style="font-size: 13px; opacity: 0.9; margin-bottom: 5px;">💎 Total General</div>
+                        <div id="balance-total-general" style="font-size: 28px; font-weight: bold;">$0</div>
+                        <div style="font-size: 11px; opacity: 0.8; margin-top: 5px;">Efectivo + Tarjetas</div>
+                    </div>
+                </div>
+
                 <!-- Active Order Section -->
                 <div id="active-order-container" class="hidden">
                     <h2 style="margin-bottom: 15px; color: #2c3e50;">📦 Pedido Activo</h2>
@@ -1772,6 +1833,83 @@
             document.getElementById('orders-today').textContent = todayOrders.length;
             document.getElementById('orders-completed').textContent = completed;
             document.getElementById('orders-active').textContent = active;
+
+            // Actualizar cuadre de caja
+            await updateCashBalance();
+        }
+
+        async function updateCashBalance() {
+            if (!currentDelivery) return;
+
+            try {
+                const today = new Date().toISOString().split('T')[0];
+
+                // Obtener valor de arranque del día
+                const { data: config } = await supabase
+                    .from('configuracion_diaria')
+                    .select('valor_arranque')
+                    .eq('fecha', today)
+                    .eq('domiciliario_id', currentDelivery.id)
+                    .single();
+
+                const valorArranque = config?.valor_arranque || 0;
+
+                // Obtener pedidos entregados del día
+                const fechaInicio = new Date(today + 'T00:00:00');
+                const fechaFin = new Date(today + 'T23:59:59');
+
+                const { data: pedidosEntregados } = await supabase
+                    .from('pedidos')
+                    .select('*')
+                    .eq('domiciliario_id', currentDelivery.id)
+                    .eq('estado', 'entregado')
+                    .gte('created_at', fechaInicio.toISOString())
+                    .lte('created_at', fechaFin.toISOString());
+
+                // Calcular efectivo y tarjetas
+                let efectivoRecaudado = 0;
+                let tarjetasTotal = 0;
+                let numeroDatafono = null;
+
+                (pedidosEntregados || []).forEach(pedido => {
+                    const valorDomicilio = pedido.valor_domicilio || 0;
+
+                    if (pedido.metodo_pago === 'efectivo') {
+                        efectivoRecaudado += valorDomicilio;
+                    } else if (pedido.metodo_pago === 'tarjeta') {
+                        tarjetasTotal += valorDomicilio;
+                        if (pedido.numero_datafono && !numeroDatafono) {
+                            numeroDatafono = pedido.numero_datafono;
+                        }
+                    }
+                });
+
+                const totalEfectivo = valorArranque + efectivoRecaudado;
+                const totalGeneral = totalEfectivo + tarjetasTotal;
+
+                // Actualizar UI
+                document.getElementById('balance-arranque').textContent = formatCurrency(valorArranque);
+                document.getElementById('balance-efectivo').textContent = formatCurrency(efectivoRecaudado);
+                document.getElementById('balance-total-efectivo').textContent = formatCurrency(totalEfectivo);
+                document.getElementById('balance-tarjetas').textContent = formatCurrency(tarjetasTotal);
+                document.getElementById('balance-total-general').textContent = formatCurrency(totalGeneral);
+
+                // Actualizar info del datáfono
+                const datafonoInfo = numeroDatafono ? `Datáfono: ${numeroDatafono}` : 'Sin datáfono asignado';
+                document.getElementById('balance-datafono-info').textContent = datafonoInfo;
+
+                console.log('💰 Cuadre actualizado:', {
+                    valorArranque,
+                    efectivoRecaudado,
+                    totalEfectivo,
+                    tarjetasTotal,
+                    totalGeneral,
+                    numeroDatafono
+                });
+
+            } catch (error) {
+                console.error('❌ Error actualizando cuadre de caja:', error);
+            }
         }
 
         window.acceptOrder = async function(orderId) {
