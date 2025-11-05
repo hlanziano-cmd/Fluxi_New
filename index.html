@@ -3393,7 +3393,7 @@
 
                 if (error) throw error;
 
-                const select = document.getElementById('search-delivery-person');
+                const select = document.getElementById('search-domiciliario');
                 select.innerHTML = '<option value="">Todos</option>';
 
                 drivers.forEach(driver => {
@@ -3419,7 +3419,7 @@
                 // Verificar que todos los elementos existen
                 const requiredFields = [
                     'search-id', 'search-cliente', 'search-direccion', 'search-barrio',
-                    'search-tipo-dom', 'search-delivery-person', 'search-metodo-pago',
+                    'search-tipo-dom', 'search-domiciliario', 'search-metodo-pago',
                     'search-datafono', 'search-estado-voucher', 'search-estado',
                     'search-fecha-desde', 'search-fecha-hasta'
                 ];
@@ -3437,7 +3437,7 @@
                 const searchDireccion = document.getElementById('search-direccion')?.value?.trim()?.toLowerCase() || '';
                 const searchBarrio = document.getElementById('search-barrio')?.value?.trim()?.toLowerCase() || '';
                 const searchTipoDom = document.getElementById('search-tipo-dom')?.value || '';
-                const searchDomiciliario = document.getElementById('search-delivery-person')?.value || '';
+                const searchDomiciliario = document.getElementById('search-domiciliario')?.value || '';
                 const searchMetodoPago = document.getElementById('search-metodo-pago')?.value || '';
                 const searchDatafono = document.getElementById('search-datafono')?.value?.trim() || '';
                 const searchEstadoVoucher = document.getElementById('search-estado-voucher')?.value || '';
@@ -3606,7 +3606,7 @@
             // Limpiar campos con validación
             const fields = [
                 'search-id', 'search-cliente', 'search-direccion', 'search-barrio',
-                'search-tipo-dom', 'search-delivery-person', 'search-metodo-pago',
+                'search-tipo-dom', 'search-domiciliario', 'search-metodo-pago',
                 'search-datafono', 'search-estado-voucher', 'search-estado',
                 'search-fecha-desde', 'search-fecha-hasta'
             ];
