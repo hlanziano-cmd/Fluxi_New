@@ -128,6 +128,27 @@
             color: white;
         }
 
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+            animation: pulse-warning 2s infinite;
+        }
+
+        @keyframes pulse-warning {
+            0%, 100% {
+                box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+            }
+            50% {
+                box-shadow: 0 4px 25px rgba(243, 156, 18, 0.7);
+            }
+        }
+
+        .btn-warning:active {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+        }
+
         .btn-danger {
             background: #e74c3c;
             color: white;
@@ -1711,6 +1732,11 @@
             document.getElementById('active-order-container').classList.remove('hidden');
             document.getElementById('available-orders-container').classList.add('hidden');
 
+            console.log('🎨 Renderizando pedidos activos:', orders.length);
+            orders.forEach(o => {
+                console.log(`   - Pedido ${o.id.substring(0, 8)}: estado=${o.estado}, tiempo_llegada=${o.tiempo_llegada}`);
+            });
+
             // Generar HTML para todos los pedidos
             const cardsHTML = orders.map((order, index) => {
                 const orderDisplay = order.consecutivo_dia ? `Pedido #${order.consecutivo_dia}` : `#${order.id.substring(0, 8)}`;
@@ -2350,8 +2376,12 @@
                 }
 
                 console.log('✅ Pedido actualizado en Supabase:', updatedOrder);
+                console.log('   - tiempo_llegada guardado:', updatedOrder.tiempo_llegada);
                 console.log('✅ Llegada registrada exitosamente');
                 showAlert('✅ Llegada registrada. Ahora puedes marcar como entregado cuando completes.', 'success');
+
+                // Pequeña espera para que Supabase procese
+                await new Promise(resolve => setTimeout(resolve, 500));
 
                 // Recargar pedidos activos
                 console.log('   - Recargando pedidos activos...');
