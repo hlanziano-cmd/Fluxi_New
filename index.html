@@ -1136,6 +1136,10 @@
                             <div style="font-size: 12px; opacity: 0.9;">✅ Tiempo Promedio Entrega</div>
                             <div id="stat-tiempo-entrega" style="font-size: 28px; font-weight: bold; margin-top: 5px;">--</div>
                         </div>
+                        <div style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <div style="font-size: 12px; opacity: 0.9;">💤 Tiempo Promedio Stand By</div>
+                            <div id="stat-tiempo-standby" style="font-size: 28px; font-weight: bold; margin-top: 5px;">--</div>
+                        </div>
                     </div>
                 </div>
 
@@ -1152,11 +1156,12 @@
                                 <th style="background: #3498db; color: white;">🚴 Tiempo Recorrido</th>
                                 <th style="background: #f39c12; color: white;">⏰ Tiempo Espera</th>
                                 <th style="background: #27ae60; color: white;">✅ Tiempo Entrega</th>
+                                <th style="background: #9b59b6; color: white;">💤 Stand By</th>
                             </tr>
                         </thead>
                         <tbody id="tiempos-table-body">
                             <tr>
-                                <td colspan="8" style="text-align: center; padding: 30px;">
+                                <td colspan="9" style="text-align: center; padding: 30px;">
                                     <div style="font-size: 48px; margin-bottom: 15px;">⏱️</div>
                                     <h4 style="color: #666; margin-bottom: 10px;">Análisis de Tiempos de Espera</h4>
                                     <p>Selecciona un rango de fechas y opcionalmente un domiciliario para ver el análisis de tiempos.</p>
@@ -4177,7 +4182,7 @@
             try {
                 console.log('🔍 Buscando tiempos:', { fechaInicio, fechaFin, domiciliarioId });
 
-                // Construir query
+                // Construir query - Excluir pedidos de Rappi
                 let query = supabase
                     .from('pedidos')
                     .select(`
@@ -4185,11 +4190,13 @@
                         domiciliarios (nombre)
                     `)
                     .eq('estado', 'entregado')
+                    .eq('tipo_domiciliario', 'propio')
                     .gte('created_at', fechaInicio + 'T00:00:00')
                     .lte('created_at', fechaFin + 'T23:59:59')
                     .not('tiempo_inicio', 'is', null)
                     .not('tiempo_entrega', 'is', null)
-                    .order('created_at', { ascending: false });
+                    .order('domiciliario_id', { ascending: true })
+                    .order('tiempo_entrega', { ascending: true });
 
                 if (domiciliarioId) {
                     query = query.eq('domiciliario_id', domiciliarioId);
@@ -4199,14 +4206,63 @@
 
                 if (error) throw error;
 
-                console.log('📊 Pedidos encontrados:', pedidos?.length || 0);
+                console.log('📊 Pedidos encontrados (excluidos Rappi):', pedidos?.length || 0);
 
-                renderTiemposTable(pedidos || []);
-                calculateTiemposStats(pedidos || []);
+                // Calcular Stand By para cada pedido
+                const pedidosConStandBy = calcularStandBy(pedidos || []);
+
+                renderTiemposTable(pedidosConStandBy);
+                calculateTiemposStats(pedidosConStandBy);
             } catch (error) {
                 console.error('Error buscando tiempos:', error);
                 showAlert('tiempos-alert', 'error', 'Error al buscar tiempos: ' + error.message);
             }
+        }
+
+        /**
+         * Calcular Stand By para cada pedido
+         * Stand By = Tiempo entre que termina un pedido e inicia el siguiente del mismo domiciliario
+         */
+        function calcularStandBy(pedidos) {
+            // Agrupar por domiciliario
+            const pedidosPorDomiciliario = {};
+
+            pedidos.forEach(pedido => {
+                if (!pedido.domiciliario_id) return;
+
+                if (!pedidosPorDomiciliario[pedido.domiciliario_id]) {
+                    pedidosPorDomiciliario[pedido.domiciliario_id] = [];
+                }
+                pedidosPorDomiciliario[pedido.domiciliario_id].push(pedido);
+            });
+
+            // Calcular Stand By para cada domiciliario
+            Object.keys(pedidosPorDomiciliario).forEach(domiciliarioId => {
+                const pedidosDom = pedidosPorDomiciliario[domiciliarioId];
+
+                // Ordenar por tiempo_entrega para asegurar orden cronológico
+                pedidosDom.sort((a, b) => a.tiempo_entrega - b.tiempo_entrega);
+
+                // Calcular Stand By
+                for (let i = 0; i < pedidosDom.length; i++) {
+                    if (i === 0) {
+                        // Primer pedido no tiene stand by previo
+                        pedidosDom[i].standBy = null;
+                    } else {
+                        // Stand By = tiempo_inicio del pedido actual - tiempo_entrega del pedido anterior
+                        const pedidoAnterior = pedidosDom[i - 1];
+                        const pedidoActual = pedidosDom[i];
+
+                        if (pedidoAnterior.tiempo_entrega && pedidoActual.tiempo_inicio) {
+                            pedidoActual.standBy = pedidoActual.tiempo_inicio - pedidoAnterior.tiempo_entrega;
+                        } else {
+                            pedidoActual.standBy = null;
+                        }
+                    }
+                }
+            });
+
+            return pedidos;
         }
 
         /**
@@ -4218,7 +4274,7 @@
             if (pedidos.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="8" style="text-align: center; padding: 30px;">
+                        <td colspan="9" style="text-align: center; padding: 30px;">
                             <div style="font-size: 48px; margin-bottom: 15px;">📭</div>
                             <h4 style="color: #666;">No se encontraron pedidos entregados en este período</h4>
                         </td>
@@ -4269,6 +4325,11 @@
                         <td style="text-align: center; background: #e8f6f3;">
                             <strong style="color: #27ae60;">${formatDuration(tiempoEntrega)}</strong>
                         </td>
+                        <td style="text-align: center; background: #f3e5f5;">
+                            <strong style="color: ${pedido.standBy ? '#9b59b6' : '#95a5a6'};">
+                                ${pedido.standBy ? formatDuration(pedido.standBy) : '--'}
+                            </strong>
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -4289,6 +4350,8 @@
             let countEspera = 0;
             let totalEntrega = 0;
             let countEntrega = 0;
+            let totalStandBy = 0;
+            let countStandBy = 0;
 
             pedidos.forEach(pedido => {
                 // Tiempo de recorrido (desde inicio hasta llegada)
@@ -4308,6 +4371,12 @@
                     totalEntrega += (pedido.tiempo_entrega - pedido.tiempo_inicio);
                     countEntrega++;
                 }
+
+                // Stand By (tiempo entre fin de un pedido e inicio del siguiente)
+                if (pedido.standBy && pedido.standBy > 0) {
+                    totalStandBy += pedido.standBy;
+                    countStandBy++;
+                }
             });
 
             // Actualizar estadísticas
@@ -4319,6 +4388,9 @@
 
             document.getElementById('stat-tiempo-entrega').textContent =
                 countEntrega > 0 ? formatDuration(totalEntrega / countEntrega) : '--';
+
+            document.getElementById('stat-tiempo-standby').textContent =
+                countStandBy > 0 ? formatDuration(totalStandBy / countStandBy) : '--';
 
             // Actualizar resumen
             document.getElementById('summary-total-pedidos').textContent = pedidos.length;
