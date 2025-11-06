@@ -781,6 +781,7 @@
                             <option value="">Todos</option>
                             <option value="efectivo">Efectivo</option>
                             <option value="datafono">Datáfono</option>
+                            <option value="rappi">Rappi</option>
                         </select>
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
@@ -1200,6 +1201,7 @@
                         <option value="">Seleccionar...</option>
                         <option value="efectivo">Efectivo</option>
                         <option value="datafono">Datáfono</option>
+                        <option value="rappi">Rappi</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -2010,6 +2012,7 @@
                 metodoPagoSelect.innerHTML = `
                     <option value="efectivo">Efectivo</option>
                     <option value="datafono">Datáfono</option>
+                    <option value="rappi">Rappi</option>
                 `;
                 metodoPagoSelect.value = order.metodo_pago || 'efectivo';
                 metodoPagoSelect.onchange = () => updatePaymentMethod(order.id, metodoPagoSelect.value);
@@ -2059,27 +2062,52 @@
                 voucherSelect.onchange = () => updateVoucherStatus(order.id, voucherSelect.value);
                 row.cells[9].appendChild(voucherSelect);
 
-                // Estado - Si es Rappi, mostrar select editable; si no, mostrar badge
+                // Estado - Mostrar badge para todos (Rappi y propios)
+                const statusBadge = document.createElement('span');
+                statusBadge.className = 'status-badge status-' + order.estado;
+                statusBadge.textContent = order.estado.charAt(0).toUpperCase() + order.estado.slice(1);
+
+                // Si es Rappi, agregar botones de cambio de estado debajo del badge
                 if (order.tipo_domiciliario === 'rappi') {
-                    // Para Rappi: Select editable (sin confirmación ni alertas)
-                    const estadoSelect = document.createElement('select');
-                    estadoSelect.className = 'btn btn-small';
-                    estadoSelect.style.width = '100%';
-                    estadoSelect.innerHTML = `
-                        <option value="pendiente">Pendiente</option>
-                        <option value="asignado">Asignado</option>
-                        <option value="en_camino">En Camino</option>
-                        <option value="entregado">Entregado</option>
-                        <option value="cancelado">Cancelado</option>
-                    `;
-                    estadoSelect.value = order.estado || 'asignado';
-                    estadoSelect.onchange = () => changeOrderStatus(order.id, estadoSelect.value, true);
-                    row.cells[10].appendChild(estadoSelect);
+                    const estadoContainer = document.createElement('div');
+                    estadoContainer.style.display = 'flex';
+                    estadoContainer.style.flexDirection = 'column';
+                    estadoContainer.style.gap = '5px';
+                    estadoContainer.style.alignItems = 'center';
+
+                    estadoContainer.appendChild(statusBadge);
+
+                    // Botones de cambio rápido de estado
+                    const btnGroup = document.createElement('div');
+                    btnGroup.style.display = 'flex';
+                    btnGroup.style.gap = '3px';
+                    btnGroup.style.flexWrap = 'wrap';
+                    btnGroup.style.justifyContent = 'center';
+
+                    const estados = [
+                        { valor: 'asignado', label: '📋', title: 'Asignado' },
+                        { valor: 'en_camino', label: '🚴', title: 'En Camino' },
+                        { valor: 'entregado', label: '✅', title: 'Entregado' },
+                        { valor: 'cancelado', label: '❌', title: 'Cancelado' }
+                    ];
+
+                    estados.forEach(est => {
+                        if (est.valor !== order.estado) {
+                            const btn = document.createElement('button');
+                            btn.className = 'btn btn-small';
+                            btn.textContent = est.label;
+                            btn.title = est.title;
+                            btn.style.padding = '3px 6px';
+                            btn.style.fontSize = '12px';
+                            btn.onclick = () => changeOrderStatus(order.id, est.valor, true);
+                            btnGroup.appendChild(btn);
+                        }
+                    });
+
+                    estadoContainer.appendChild(btnGroup);
+                    row.cells[10].appendChild(estadoContainer);
                 } else {
-                    // Para domiciliarios propios: Badge no editable
-                    const statusBadge = document.createElement('span');
-                    statusBadge.className = 'status-badge status-' + order.estado;
-                    statusBadge.textContent = order.estado.charAt(0).toUpperCase() + order.estado.slice(1);
+                    // Para domiciliarios propios: Solo badge
                     row.cells[10].appendChild(statusBadge);
                 }
 
@@ -3505,7 +3533,7 @@
                     <td><strong>${formatCurrency(order.valor_pedido + order.valor_domicilio)}</strong></td>
                     <td>${order.domiciliario_nombre || 'Sin asignar'}</td>
                     <td>${order.numero_datafono || '--'}</td>
-                    <td>${order.metodo_pago === 'efectivo' ? 'Efectivo' : order.metodo_pago === 'datafono' ? 'Datáfono' : '--'}</td>
+                    <td>${order.metodo_pago === 'efectivo' ? 'Efectivo' : order.metodo_pago === 'datafono' ? 'Datáfono' : order.metodo_pago === 'rappi' ? 'Rappi' : '--'}</td>
                     <td></td>
                     <td>${order.tiempo_aceptacion ? calculateElapsedTime(order.tiempo_aceptacion) : '--'}</td>
                 `;
@@ -3737,7 +3765,7 @@
                     <td style="text-align: center;"><strong>${formatCurrency(order.valor_pedido + order.valor_domicilio)}</strong></td>
                     <td style="text-align: center;">${order.tipo_domiciliario ? (order.tipo_domiciliario === 'propio' ? 'Propio' : 'Rappi') : '--'}</td>
                     <td style="text-align: center;">${order.domiciliario_nombre || '--'}</td>
-                    <td style="text-align: center;">${order.metodo_pago === 'efectivo' ? 'Efectivo' : order.metodo_pago === 'datafono' ? 'Datáfono' : '--'}</td>
+                    <td style="text-align: center;">${order.metodo_pago === 'efectivo' ? 'Efectivo' : order.metodo_pago === 'datafono' ? 'Datáfono' : order.metodo_pago === 'rappi' ? 'Rappi' : '--'}</td>
                     <td style="text-align: center;">${order.numero_datafono || '--'}</td>
                     <td style="text-align: center;"></td>
                     <td style="text-align: center;"></td>
@@ -4132,6 +4160,9 @@
                         } else {
                             console.warn(`⚠️ Pedido con datáfono sin número:`, pedido.id, pedido.cliente);
                         }
+                    } else if (pedido.metodo_pago === 'rappi') {
+                        // Rappi maneja sus propios pagos - no se incluye en el cuadre del domiciliario
+                        console.log(`📱 Pago Rappi - No incluido en cuadre: ${pedido.id}`);
                     }
 
                     cuadre.total = cuadre.valorArranque + cuadre.efectivo + cuadre.totalTarjetas;

@@ -1743,7 +1743,7 @@
                         </div>
                         <div class="order-detail-row">
                             <div class="order-detail-label">💳 Pago:</div>
-                            <div class="order-detail-value">${order.metodo_pago === 'efectivo' ? 'Efectivo' : 'Datáfono'}</div>
+                            <div class="order-detail-value">${order.metodo_pago === 'efectivo' ? 'Efectivo' : order.metodo_pago === 'datafono' ? 'Datáfono' : 'Rappi'}</div>
                         </div>
                         ${order.notas ? `
                         <div class="order-detail-row">
@@ -1821,7 +1821,7 @@
                         </div>
                         <div class="order-detail-row">
                             <div class="order-detail-label">💳 Pago:</div>
-                            <div class="order-detail-value">${order.metodo_pago === 'efectivo' ? 'Efectivo' : 'Datáfono'}</div>
+                            <div class="order-detail-value">${order.metodo_pago === 'efectivo' ? 'Efectivo' : order.metodo_pago === 'datafono' ? 'Datáfono' : 'Rappi'}</div>
                         </div>
                     </div>
                     ${!isLocationActive ? `
@@ -1971,6 +1971,9 @@
                         if (pedido.numero_datafono && !numeroDatafono) {
                             numeroDatafono = pedido.numero_datafono;
                         }
+                    } else if (pedido.metodo_pago === 'rappi') {
+                        // Rappi maneja sus propios pagos - no se incluye en el cuadre
+                        console.log('📱 Pago Rappi - No incluido en cuadre:', pedido.id);
                     }
                 });
 
