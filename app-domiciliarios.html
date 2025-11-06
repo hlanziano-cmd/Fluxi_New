@@ -1664,19 +1664,32 @@
         }
 
         async function loadOrders() {
-            if (!currentDelivery) return;
+            if (!currentDelivery) {
+                console.warn('⚠️ loadOrders llamado sin currentDelivery');
+                return;
+            }
 
             try {
+                console.log('🔄 Cargando pedidos para domiciliario:', currentDelivery.id);
+
                 // Obtener TODOS los pedidos asignados, ordenados por tiempo de aceptación (el primero aceptado primero)
-                const { data: activeOrders } = await supabase
+                const { data: activeOrders, error } = await supabase
                     .from('pedidos')
                     .select('*')
                     .eq('domiciliario_id', currentDelivery.id)
                     .in('estado', ['asignado', 'en_camino'])
                     .order('tiempo_aceptacion', { ascending: true }); // Primero el que fue aceptado primero
 
+                if (error) {
+                    console.error('❌ Error al cargar pedidos:', error);
+                    throw error;
+                }
+
+                console.log(`📦 Pedidos encontrados: ${activeOrders?.length || 0}`);
                 if (activeOrders && activeOrders.length > 0) {
-                    console.log(`📦 ${activeOrders.length} pedido(s) asignado(s)`);
+                    activeOrders.forEach(o => {
+                        console.log(`   - ${o.id.substring(0,8)}: estado=${o.estado}, tiempo_aceptacion=${o.tiempo_aceptacion}, tiempo_inicio=${o.tiempo_inicio}, tiempo_llegada=${o.tiempo_llegada}`);
+                    });
 
                     // Renderizar TODOS los pedidos activos
                     renderActiveOrders(activeOrders);
@@ -1782,13 +1795,18 @@
                         ${order.estado === 'asignado' ?
                             '<button class="btn btn-success" onclick="window.startDeliveryRoute(\'' + order.id + '\')" style="width: 100%; margin-bottom: 10px;">🚀 Iniciar Entrega</button>'
                         : ''}
-                        ${order.estado === 'en_camino' ? (
-                            !order.tiempo_llegada ?
-                                '<button class="btn btn-warning" onclick="window.markArrival(\'' + order.id + '\')" style="width: 100%; margin-bottom: 10px;">📍 Llegué al Sitio</button>'
-                            :
-                                '<div style="background: #27ae60; color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center;">✅ Llegada registrada<br><small style="font-size: 12px;">⏱️ Tiempo en espera: ' + (order.tiempo_llegada ? calculateElapsedTime(order.tiempo_llegada) : '--') + '</small></div>' +
-                                '<button class="btn btn-primary" onclick="window.completeDelivery(\'' + order.id + '\')" style="width: 100%; margin-bottom: 10px;">✅ Marcar Entregado</button>'
-                        ) : ''}
+                        ${order.estado === 'en_camino' ? (() => {
+                            console.log(`   [Pedido ${order.id.substring(0,8)}] tiempo_llegada = ${order.tiempo_llegada} (tipo: ${typeof order.tiempo_llegada})`);
+                            const tieneLlegada = order.tiempo_llegada && order.tiempo_llegada !== null && order.tiempo_llegada !== 'null';
+                            console.log(`   [Pedido ${order.id.substring(0,8)}] ¿Tiene llegada? ${tieneLlegada}`);
+
+                            if (!tieneLlegada) {
+                                return '<button class="btn btn-warning" onclick="window.markArrival(\'' + order.id + '\')" style="width: 100%; margin-bottom: 10px;">📍 Llegué al Sitio</button>';
+                            } else {
+                                return '<div style="background: #27ae60; color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center;">✅ Llegada registrada<br><small style="font-size: 12px;">⏱️ Tiempo en espera: ' + calculateElapsedTime(order.tiempo_llegada) + '</small></div>' +
+                                    '<button class="btn btn-primary" onclick="window.completeDelivery(\'' + order.id + '\')" style="width: 100%; margin-bottom: 10px;">✅ Marcar Entregado</button>';
+                            }
+                        })() : ''}
                         <button class="btn btn-danger" onclick="window.cancelOrder('${order.id}')" style="width: 100%; margin-bottom: 10px;">
                             ❌ Cancelar Pedido
                         </button>
