@@ -4488,19 +4488,22 @@
                     }
 
                     const cuadre = cuadrePorDomiciliario[pedido.domiciliario_id];
+                    const valorPedido = pedido.valor_pedido || 0;
                     const valorDomicilio = pedido.valor_domicilio || 0;
+                    const valorTotal = valorPedido + valorDomicilio;
 
                     if (pedido.metodo_pago === 'efectivo') {
-                        cuadre.efectivo += valorDomicilio;
+                        cuadre.efectivo += valorTotal;
+                        console.log(`💵 Efectivo procesado - Domiciliario: ${cuadre.nombre}, Pedido: ${valorPedido}, Domicilio: ${valorDomicilio}, Total: ${valorTotal}`);
                     } else if (pedido.metodo_pago === 'datafono') {
                         if (pedido.numero_datafono) {
                             const datafono = pedido.numero_datafono;
                             if (!cuadre.tarjetas[datafono]) {
                                 cuadre.tarjetas[datafono] = 0;
                             }
-                            cuadre.tarjetas[datafono] += valorDomicilio;
-                            cuadre.totalTarjetas += valorDomicilio;
-                            console.log(`💳 Datáfono procesado - Domiciliario: ${cuadre.nombre}, Datáfono: ${datafono}, Valor: ${valorDomicilio}`);
+                            cuadre.tarjetas[datafono] += valorTotal;
+                            cuadre.totalTarjetas += valorTotal;
+                            console.log(`💳 Datáfono procesado - Domiciliario: ${cuadre.nombre}, Datáfono: ${datafono}, Pedido: ${valorPedido}, Domicilio: ${valorDomicilio}, Total: ${valorTotal}`);
                         } else {
                             console.warn(`⚠️ Pedido con datáfono sin número:`, pedido.id, pedido.cliente);
                         }
