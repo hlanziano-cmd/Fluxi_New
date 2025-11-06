@@ -1128,6 +1128,10 @@
                             <div style="font-size: 12px; opacity: 0.9;">🚴 Tiempo Promedio Recorrido</div>
                             <div id="stat-tiempo-recorrido" style="font-size: 28px; font-weight: bold; margin-top: 5px;">--</div>
                         </div>
+                        <div style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <div style="font-size: 12px; opacity: 0.9;">⏰ Tiempo Promedio Espera</div>
+                            <div id="stat-tiempo-espera" style="font-size: 28px; font-weight: bold; margin-top: 5px;">--</div>
+                        </div>
                         <div style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                             <div style="font-size: 12px; opacity: 0.9;">✅ Tiempo Promedio Entrega</div>
                             <div id="stat-tiempo-entrega" style="font-size: 28px; font-weight: bold; margin-top: 5px;">--</div>
@@ -1141,17 +1145,18 @@
                         <thead>
                             <tr>
                                 <th>Pedido</th>
-                                <th>Cliente</th>
+                                <th>Dirección</th>
+                                <th>Barrio</th>
                                 <th>Domiciliario</th>
                                 <th>Fecha</th>
                                 <th style="background: #3498db; color: white;">🚴 Tiempo Recorrido</th>
+                                <th style="background: #f39c12; color: white;">⏰ Tiempo Espera</th>
                                 <th style="background: #27ae60; color: white;">✅ Tiempo Entrega</th>
-                                <th style="background: #667eea; color: white;">⏱️ Tiempo Total</th>
                             </tr>
                         </thead>
                         <tbody id="tiempos-table-body">
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 30px;">
+                                <td colspan="8" style="text-align: center; padding: 30px;">
                                     <div style="font-size: 48px; margin-bottom: 15px;">⏱️</div>
                                     <h4 style="color: #666; margin-bottom: 10px;">Análisis de Tiempos de Espera</h4>
                                     <p>Selecciona un rango de fechas y opcionalmente un domiciliario para ver el análisis de tiempos.</p>
@@ -4213,7 +4218,7 @@
             if (pedidos.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 30px;">
+                        <td colspan="8" style="text-align: center; padding: 30px;">
                             <div style="font-size: 48px; margin-bottom: 15px;">📭</div>
                             <h4 style="color: #666;">No se encontraron pedidos entregados en este período</h4>
                         </td>
@@ -4226,14 +4231,17 @@
 
             tbody.innerHTML = pedidos.map(pedido => {
                 // Calcular tiempos
+                // Tiempo Recorrido: Desde inicio hasta llegada al sitio
                 const tiempoRecorrido = pedido.tiempo_llegada ?
                     (pedido.tiempo_llegada - pedido.tiempo_inicio) : null;
 
+                // Tiempo Espera: Desde llegada al sitio hasta entrega
+                const tiempoEspera = (pedido.tiempo_llegada && pedido.tiempo_entrega) ?
+                    (pedido.tiempo_entrega - pedido.tiempo_llegada) : null;
+
+                // Tiempo Entrega: Tiempo Recorrido + Tiempo Espera (desde inicio hasta entrega final)
                 const tiempoEntrega = (pedido.tiempo_inicio && pedido.tiempo_entrega) ?
                     (pedido.tiempo_entrega - pedido.tiempo_inicio) : null;
-
-                const tiempoTotal = (pedido.tiempo_aceptacion && pedido.tiempo_entrega) ?
-                    (pedido.tiempo_entrega - pedido.tiempo_aceptacion) : null;
 
                 const fecha = new Date(pedido.created_at).toLocaleDateString('es-CO', {
                     year: 'numeric',
@@ -4246,17 +4254,20 @@
                 return `
                     <tr>
                         <td><strong>#${pedido.id.substring(0, 8)}</strong></td>
-                        <td>${pedido.cliente}</td>
+                        <td>${pedido.direccion || '--'}</td>
+                        <td>${pedido.barrio || '--'}</td>
                         <td>${pedido.domiciliarios?.nombre || '--'}</td>
                         <td>${fecha}</td>
                         <td style="text-align: center; background: #e8f4fc;">
                             <strong style="color: #3498db;">${formatDuration(tiempoRecorrido)}</strong>
                         </td>
+                        <td style="text-align: center; background: #fef5e7;">
+                            <strong style="color: ${tiempoEspera ? '#f39c12' : '#95a5a6'};">
+                                ${tiempoEspera ? formatDuration(tiempoEspera) : 'Sin espera'}
+                            </strong>
+                        </td>
                         <td style="text-align: center; background: #e8f6f3;">
                             <strong style="color: #27ae60;">${formatDuration(tiempoEntrega)}</strong>
-                        </td>
-                        <td style="text-align: center; background: #f4ecf7;">
-                            <strong style="color: #667eea;">${formatDuration(tiempoTotal)}</strong>
                         </td>
                     </tr>
                 `;
@@ -4286,13 +4297,13 @@
                     countRecorrido++;
                 }
 
-                // Tiempo de espera (desde llegada hasta entrega) - solo para el resumen
+                // Tiempo de espera (desde llegada hasta entrega)
                 if (pedido.tiempo_llegada && pedido.tiempo_entrega) {
                     totalEspera += (pedido.tiempo_entrega - pedido.tiempo_llegada);
                     countEspera++;
                 }
 
-                // Tiempo de entrega (desde inicio hasta entrega final)
+                // Tiempo de entrega (desde inicio hasta entrega final = recorrido + espera)
                 if (pedido.tiempo_inicio && pedido.tiempo_entrega) {
                     totalEntrega += (pedido.tiempo_entrega - pedido.tiempo_inicio);
                     countEntrega++;
@@ -4302,6 +4313,9 @@
             // Actualizar estadísticas
             document.getElementById('stat-tiempo-recorrido').textContent =
                 countRecorrido > 0 ? formatDuration(totalRecorrido / countRecorrido) : '--';
+
+            document.getElementById('stat-tiempo-espera').textContent =
+                countEspera > 0 ? formatDuration(totalEspera / countEspera) : '--';
 
             document.getElementById('stat-tiempo-entrega').textContent =
                 countEntrega > 0 ? formatDuration(totalEntrega / countEntrega) : '--';
