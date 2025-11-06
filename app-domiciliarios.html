@@ -1753,26 +1753,16 @@
                         ` : ''}
                     </div>
                     <div class="action-buttons">
-                        ${order.estado === 'asignado' ? `
-                            <button class="btn btn-success" onclick="window.startDeliveryRoute('${order.id}')" style="width: 100%; margin-bottom: 10px;">
-                                🚀 Iniciar Entrega
-                            </button>
-                        ` : ''}
-                        ${order.estado === 'en_camino' ? `
-                            ${!order.tiempo_llegada ? `
-                                <button class="btn btn-warning" onclick="window.markArrival('${order.id}')" style="width: 100%; margin-bottom: 10px;">
-                                    📍 Llegué al Sitio
-                                </button>
-                            ` : `
-                                <div style="background: #27ae60; color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
-                                    ✅ Llegada registrada<br>
-                                    <small style="font-size: 12px;">⏱️ Tiempo en espera: ${order.tiempo_llegada ? calculateElapsedTime(order.tiempo_llegada) : '--'}</small>
-                                </div>
-                                <button class="btn btn-primary" onclick="window.completeDelivery('${order.id}')" style="width: 100%; margin-bottom: 10px;">
-                                    ✅ Marcar Entregado
-                                </button>
-                            `}
-                        ` : ''}
+                        ${order.estado === 'asignado' ?
+                            '<button class="btn btn-success" onclick="window.startDeliveryRoute(\'' + order.id + '\')" style="width: 100%; margin-bottom: 10px;">🚀 Iniciar Entrega</button>'
+                        : ''}
+                        ${order.estado === 'en_camino' ? (
+                            !order.tiempo_llegada ?
+                                '<button class="btn btn-warning" onclick="window.markArrival(\'' + order.id + '\')" style="width: 100%; margin-bottom: 10px;">📍 Llegué al Sitio</button>'
+                            :
+                                '<div style="background: #27ae60; color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center;">✅ Llegada registrada<br><small style="font-size: 12px;">⏱️ Tiempo en espera: ' + (order.tiempo_llegada ? calculateElapsedTime(order.tiempo_llegada) : '--') + '</small></div>' +
+                                '<button class="btn btn-primary" onclick="window.completeDelivery(\'' + order.id + '\')" style="width: 100%; margin-bottom: 10px;">✅ Marcar Entregado</button>'
+                        ) : ''}
                         <button class="btn btn-danger" onclick="window.cancelOrder('${order.id}')" style="width: 100%; margin-bottom: 10px;">
                             ❌ Cancelar Pedido
                         </button>
@@ -2311,19 +2301,39 @@
         window.markArrival = async function(orderId) {
             console.log('📍 ========== MARCANDO LLEGADA AL SITIO ==========');
             console.log('   - Pedido ID:', orderId);
+            console.log('   - Tipo de orderId:', typeof orderId);
 
-            if (!confirm('¿Confirmas que llegaste al sitio de entrega?')) return;
+            if (!orderId) {
+                console.error('❌ Order ID es null o undefined');
+                showAlert('❌ Error: No se pudo identificar el pedido', 'error');
+                return;
+            }
+
+            if (!confirm('¿Confirmas que llegaste al sitio de entrega?')) {
+                console.log('⏸️ Usuario canceló la confirmación');
+                return;
+            }
+
+            // Deshabilitar botones temporalmente
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
 
             try {
                 const arrivalTime = Date.now();
                 console.log('   - Tiempo de llegada:', new Date(arrivalTime).toLocaleTimeString());
+                console.log('   - Timestamp:', arrivalTime);
 
                 // Actualizar ubicación al marcar llegada
                 if (isLocationActive) {
-                    await updateLocation();
-                    console.log('✅ Ubicación actualizada al marcar llegada');
+                    try {
+                        await updateLocation();
+                        console.log('✅ Ubicación actualizada al marcar llegada');
+                    } catch (locError) {
+                        console.warn('⚠️ Error al actualizar ubicación (no crítico):', locError);
+                    }
                 }
 
+                console.log('   - Actualizando en Supabase...');
                 const { data: updatedOrder, error } = await supabase
                     .from('pedidos')
                     .update({
@@ -2339,14 +2349,21 @@
                     throw error;
                 }
 
+                console.log('✅ Pedido actualizado en Supabase:', updatedOrder);
                 console.log('✅ Llegada registrada exitosamente');
                 showAlert('✅ Llegada registrada. Ahora puedes marcar como entregado cuando completes.', 'success');
 
                 // Recargar pedidos activos
-                await loadActiveOrders();
+                console.log('   - Recargando pedidos activos...');
+                await loadOrders();
+                console.log('✅ Pedidos recargados');
             } catch (error) {
                 console.error('❌ Error al marcar llegada:', error);
+                console.error('   - Error stack:', error.stack);
                 showAlert('❌ Error al registrar llegada: ' + error.message, 'error');
+            } finally {
+                // Rehabilitar botones
+                buttons.forEach(btn => btn.disabled = false);
             }
         };
 
