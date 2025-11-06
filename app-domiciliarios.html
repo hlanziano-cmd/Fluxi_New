@@ -1803,7 +1803,16 @@
                             if (!tieneLlegada) {
                                 return '<button class="btn btn-warning" onclick="window.markArrival(\'' + order.id + '\')" style="width: 100%; margin-bottom: 10px;">📍 Llegué al Sitio</button>';
                             } else {
-                                return '<div style="background: #27ae60; color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center;">✅ Llegada registrada<br><small style="font-size: 12px;">⏱️ Tiempo en espera: ' + calculateElapsedTime(order.tiempo_llegada) + '</small></div>' +
+                                // Calcular tiempo de espera
+                                const elapsedSeconds = Math.floor((Date.now() - order.tiempo_llegada) / 1000);
+                                const hours = Math.floor(elapsedSeconds / 3600);
+                                const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+                                const secs = elapsedSeconds % 60;
+                                const timeStr = hours > 0
+                                    ? hours + 'h ' + minutes + 'm ' + secs + 's'
+                                    : (minutes > 0 ? minutes + 'm ' + secs + 's' : secs + 's');
+
+                                return '<div style="background: #27ae60; color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center;">✅ Llegada registrada<br><small style="font-size: 12px;">⏱️ Tiempo en espera: ' + timeStr + '</small></div>' +
                                     '<button class="btn btn-primary" onclick="window.completeDelivery(\'' + order.id + '\')" style="width: 100%; margin-bottom: 10px;">✅ Marcar Entregado</button>';
                             }
                         })() : ''}
