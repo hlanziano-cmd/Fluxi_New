@@ -4307,9 +4307,21 @@
                     minute: '2-digit'
                 });
 
+                // Formato de ID igual que en Gestión de Pedidos
+                let orderDisplay;
+                if (pedido.consecutivo_dia && pedido.domiciliarios?.nombre) {
+                    // Mostrar nombre del domiciliario + consecutivo
+                    const nombreCorto = pedido.domiciliarios.nombre.split(' ')[0]; // Primer nombre
+                    orderDisplay = `${nombreCorto} #${pedido.consecutivo_dia}`;
+                } else if (pedido.consecutivo_dia) {
+                    orderDisplay = `#${pedido.consecutivo_dia}`;
+                } else {
+                    orderDisplay = `#${pedido.id.substring(0, 8)}`;
+                }
+
                 return `
                     <tr>
-                        <td style="font-family: monospace; font-size: 11px;"><strong>${pedido.id}</strong></td>
+                        <td style="text-align: center;"><strong>${orderDisplay}</strong></td>
                         <td>${pedido.direccion || '--'}</td>
                         <td>${pedido.barrio || '--'}</td>
                         <td>${pedido.domiciliarios?.nombre || '--'}</td>
