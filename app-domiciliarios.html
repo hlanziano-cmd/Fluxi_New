@@ -1889,39 +1889,20 @@
             if (!currentDelivery) return;
 
             try {
-                // Obtener fecha actual y calcular el inicio del día laboral (8 AM)
+                // Obtener fecha actual
                 const ahora = new Date();
                 const today = new Date().toISOString().split('T')[0];
 
-                // Calcular inicio del día laboral (hoy a las 8 AM)
-                const inicioDiaLaboral = new Date(today + 'T08:00:00');
+                // USAR EL MISMO RANGO QUE INDEX: Todo el día de 00:00 a 23:59
+                // Esto asegura que ambas apps muestren los mismos valores
+                const fechaInicio = new Date(today + 'T00:00:00');
+                const fechaFin = new Date(today + 'T23:59:59');
+                const fechaConfiguracion = today;
 
-                // Si aún no son las 8 AM de hoy, usar las 8 AM de ayer
-                let fechaInicio;
-                let fechaConfiguracion = today;
-
-                if (ahora < inicioDiaLaboral) {
-                    // Estamos antes de las 8 AM, mostrar datos desde las 8 AM de ayer
-                    const ayer = new Date(ahora);
-                    ayer.setDate(ayer.getDate() - 1);
-                    const ayerStr = ayer.toISOString().split('T')[0];
-                    fechaInicio = new Date(ayerStr + 'T08:00:00');
-                    fechaConfiguracion = ayerStr; // Usar configuración de ayer
-
-                    console.log('⏰ Antes de las 8 AM - Mostrando cuadre desde las 8 AM de ayer');
-                } else {
-                    // Después de las 8 AM, mostrar datos desde las 8 AM de hoy
-                    fechaInicio = inicioDiaLaboral;
-
-                    console.log('⏰ Después de las 8 AM - Mostrando cuadre desde las 8 AM de hoy');
-                }
-
-                // Fecha fin es el momento actual
-                const fechaFin = new Date();
-
-                console.log('📅 Rango de cuadre:', {
+                console.log('📅 Rango de cuadre (igual que Index):', {
                     inicio: fechaInicio.toLocaleString('es-CO'),
-                    fin: fechaFin.toLocaleString('es-CO')
+                    fin: fechaFin.toLocaleString('es-CO'),
+                    fecha: today
                 });
 
                 // Obtener valor de arranque del día laboral actual
@@ -1986,12 +1967,13 @@
                 const totalEfectivo = valorArranque + efectivoRecaudado;
                 const totalGeneral = totalEfectivo + datafonoTotal;
 
-                console.log('💰 Totales calculados:', {
+                console.log('💰 Cuadre actualizado (mismo cálculo que Index):', {
+                    valorArranque,
                     efectivoRecaudado,
                     cantidadEfectivo,
+                    totalEfectivo,
                     datafonoTotal,
                     cantidadDatafono,
-                    totalEfectivo,
                     totalGeneral
                 });
 
@@ -2011,20 +1993,9 @@
                         : 'Sin datáfono asignado';
                 document.getElementById('balance-datafono-info').textContent = datafonoInfo;
 
-                // Actualizar texto del período
-                const periodInfo = ahora < inicioDiaLaboral
-                    ? '⏰ Desde las 8:00 AM de ayer (Antes del corte de hoy)'
-                    : '⏰ Desde las 8:00 AM de hoy';
+                // Actualizar texto del período (mismo que Index)
+                const periodInfo = `📅 Cuadre del día: ${today}`;
                 document.getElementById('balance-period-info').textContent = periodInfo;
-
-                console.log('💰 Cuadre actualizado:', {
-                    valorArranque,
-                    efectivoRecaudado,
-                    totalEfectivo,
-                    datafonoTotal,
-                    totalGeneral,
-                    numeroDatafono
-                });
 
             } catch (error) {
                 console.error('❌ Error actualizando cuadre de caja:', error);
