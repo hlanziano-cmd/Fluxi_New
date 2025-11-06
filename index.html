@@ -428,6 +428,7 @@
         <div class="menu-item" data-module="consulta">🔍 Consulta de Pedidos</div>
         <div class="menu-item" data-module="dashboard">📊 Reportes</div>
         <div class="menu-item" data-module="cuadre-caja">💰 Cuadre de Caja</div>
+        <div class="menu-item" data-module="tiempos-espera">⏱️ Tiempos de Espera</div>
         <div class="menu-item" data-module="configuracion">⚙️ Configuración</div>
     </div>
 
@@ -1081,6 +1082,110 @@
                         <li>El domiciliario abre el link y gestiona su pedido</li>
                         <li>El sistema actualiza todo en tiempo real</li>
                     </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIEMPOS DE ESPERA -->
+        <div id="module-tiempos-espera" class="module-container">
+            <div class="card">
+                <div class="card-header">
+                    <h3>⏱️ Tiempos de Espera y Stand By</h3>
+                </div>
+
+                <div id="tiempos-alert"></div>
+
+                <!-- Filtros -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Fecha Inicio</label>
+                        <input type="date" id="filter-tiempos-fecha-inicio" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Fecha Fin</label>
+                        <input type="date" id="filter-tiempos-fecha-fin" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Domiciliario</label>
+                        <select id="filter-tiempos-domiciliario" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: flex-end;">
+                        <button class="btn btn-primary" id="btn-buscar-tiempos" style="flex: 1;">
+                            🔍 Buscar
+                        </button>
+                        <button class="btn btn-secondary" id="btn-limpiar-tiempos">
+                            🗑️ Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Estadísticas Resumidas -->
+                <div id="tiempos-stats-container" style="display: none; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <div style="font-size: 12px; opacity: 0.9;">⏱️ Tiempo Promedio Total</div>
+                            <div id="stat-tiempo-total" style="font-size: 28px; font-weight: bold; margin-top: 5px;">--</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <div style="font-size: 12px; opacity: 0.9;">🚴 Tiempo Promedio Recorrido</div>
+                            <div id="stat-tiempo-recorrido" style="font-size: 28px; font-weight: bold; margin-top: 5px;">--</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <div style="font-size: 12px; opacity: 0.9;">⏰ Tiempo Promedio Espera</div>
+                            <div id="stat-tiempo-espera" style="font-size: 28px; font-weight: bold; margin-top: 5px;">--</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <div style="font-size: 12px; opacity: 0.9;">✅ Tiempo Promedio Entrega</div>
+                            <div id="stat-tiempo-entrega" style="font-size: 28px; font-weight: bold; margin-top: 5px;">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Tiempos -->
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pedido</th>
+                                <th>Cliente</th>
+                                <th>Domiciliario</th>
+                                <th>Fecha</th>
+                                <th style="background: #3498db; color: white;">🚴 Tiempo Recorrido</th>
+                                <th style="background: #f39c12; color: white;">⏰ Tiempo Espera</th>
+                                <th style="background: #27ae60; color: white;">✅ Tiempo Entrega</th>
+                                <th style="background: #667eea; color: white;">⏱️ Tiempo Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tiempos-table-body">
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 30px;">
+                                    <div style="font-size: 48px; margin-bottom: 15px;">⏱️</div>
+                                    <h4 style="color: #666; margin-bottom: 10px;">Análisis de Tiempos de Espera</h4>
+                                    <p>Selecciona un rango de fechas y opcionalmente un domiciliario para ver el análisis de tiempos.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="tiempos-summary" style="display: none; margin-top: 20px; padding: 20px; background: #ecf0f1; border-radius: 8px;">
+                    <h4 style="margin-bottom: 10px;">📊 Resumen</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div>
+                            <strong>Total de pedidos analizados:</strong>
+                            <div id="summary-total-pedidos" style="font-size: 24px; color: #667eea; font-weight: bold;">0</div>
+                        </div>
+                        <div>
+                            <strong>Pedidos con tiempo de espera:</strong>
+                            <div id="summary-pedidos-con-espera" style="font-size: 24px; color: #f39c12; font-weight: bold;">0</div>
+                        </div>
+                        <div>
+                            <strong>Pedidos sin tiempo de espera:</strong>
+                            <div id="summary-pedidos-sin-espera" style="font-size: 24px; color: #95a5a6; font-weight: bold;">0</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -4010,6 +4115,262 @@
         document.getElementById('btn-save-reset-time').addEventListener('click', saveResetTime);
 
         // ============================================
+        // MÓDULO DE TIEMPOS DE ESPERA
+        // ============================================
+
+        /**
+         * Cargar domiciliarios para el filtro de tiempos
+         */
+        async function loadDomiciliariosForTiempos() {
+            if (!supabase) return;
+            try {
+                const { data: domiciliarios } = await supabase
+                    .from('domiciliarios')
+                    .select('*')
+                    .order('nombre');
+
+                const select = document.getElementById('filter-tiempos-domiciliario');
+                select.innerHTML = '<option value="">Todos</option>';
+
+                domiciliarios?.forEach(dom => {
+                    const option = document.createElement('option');
+                    option.value = dom.id;
+                    option.textContent = dom.nombre;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error cargando domiciliarios para tiempos:', error);
+            }
+        }
+
+        /**
+         * Función auxiliar para formatear duración en minutos y segundos
+         */
+        function formatDuration(milliseconds) {
+            if (!milliseconds || milliseconds <= 0) return '--';
+
+            const totalSeconds = Math.floor(milliseconds / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            if (hours > 0) {
+                return `${hours}h ${minutes}m ${seconds}s`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${seconds}s`;
+            } else {
+                return `${seconds}s`;
+            }
+        }
+
+        /**
+         * Buscar y analizar tiempos
+         */
+        async function buscarTiempos() {
+            if (!supabase) return;
+
+            const fechaInicio = document.getElementById('filter-tiempos-fecha-inicio').value;
+            const fechaFin = document.getElementById('filter-tiempos-fecha-fin').value;
+            const domiciliarioId = document.getElementById('filter-tiempos-domiciliario').value;
+
+            if (!fechaInicio || !fechaFin) {
+                showAlert('tiempos-alert', 'error', 'Debes seleccionar fecha de inicio y fin');
+                return;
+            }
+
+            try {
+                console.log('🔍 Buscando tiempos:', { fechaInicio, fechaFin, domiciliarioId });
+
+                // Construir query
+                let query = supabase
+                    .from('pedidos')
+                    .select(`
+                        *,
+                        domiciliarios (nombre)
+                    `)
+                    .eq('estado', 'entregado')
+                    .gte('created_at', fechaInicio + 'T00:00:00')
+                    .lte('created_at', fechaFin + 'T23:59:59')
+                    .not('tiempo_inicio', 'is', null)
+                    .not('tiempo_entrega', 'is', null)
+                    .order('created_at', { ascending: false });
+
+                if (domiciliarioId) {
+                    query = query.eq('domiciliario_id', domiciliarioId);
+                }
+
+                const { data: pedidos, error } = await query;
+
+                if (error) throw error;
+
+                console.log('📊 Pedidos encontrados:', pedidos?.length || 0);
+
+                renderTiemposTable(pedidos || []);
+                calculateTiemposStats(pedidos || []);
+            } catch (error) {
+                console.error('Error buscando tiempos:', error);
+                showAlert('tiempos-alert', 'error', 'Error al buscar tiempos: ' + error.message);
+            }
+        }
+
+        /**
+         * Renderizar tabla de tiempos
+         */
+        function renderTiemposTable(pedidos) {
+            const tbody = document.getElementById('tiempos-table-body');
+
+            if (pedidos.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 30px;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">📭</div>
+                            <h4 style="color: #666;">No se encontraron pedidos entregados en este período</h4>
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('tiempos-stats-container').style.display = 'none';
+                document.getElementById('tiempos-summary').style.display = 'none';
+                return;
+            }
+
+            tbody.innerHTML = pedidos.map(pedido => {
+                // Calcular tiempos
+                const tiempoRecorrido = pedido.tiempo_llegada ?
+                    (pedido.tiempo_llegada - pedido.tiempo_inicio) : null;
+
+                const tiempoEspera = (pedido.tiempo_llegada && pedido.tiempo_entrega) ?
+                    (pedido.tiempo_entrega - pedido.tiempo_llegada) : null;
+
+                const tiempoEntrega = (pedido.tiempo_inicio && pedido.tiempo_entrega) ?
+                    (pedido.tiempo_entrega - pedido.tiempo_inicio) : null;
+
+                const tiempoTotal = (pedido.tiempo_aceptacion && pedido.tiempo_entrega) ?
+                    (pedido.tiempo_entrega - pedido.tiempo_aceptacion) : null;
+
+                const fecha = new Date(pedido.created_at).toLocaleDateString('es-CO', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                return `
+                    <tr>
+                        <td><strong>#${pedido.id.substring(0, 8)}</strong></td>
+                        <td>${pedido.cliente}</td>
+                        <td>${pedido.domiciliarios?.nombre || '--'}</td>
+                        <td>${fecha}</td>
+                        <td style="text-align: center; background: #e8f4fc;">
+                            <strong style="color: #3498db;">${formatDuration(tiempoRecorrido)}</strong>
+                        </td>
+                        <td style="text-align: center; background: #fef5e7;">
+                            <strong style="color: ${tiempoEspera ? '#f39c12' : '#95a5a6'};">
+                                ${tiempoEspera ? formatDuration(tiempoEspera) : 'Sin espera'}
+                            </strong>
+                        </td>
+                        <td style="text-align: center; background: #e8f6f3;">
+                            <strong style="color: #27ae60;">${formatDuration(tiempoEntrega)}</strong>
+                        </td>
+                        <td style="text-align: center; background: #f4ecf7;">
+                            <strong style="color: #667eea;">${formatDuration(tiempoTotal)}</strong>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('tiempos-stats-container').style.display = 'block';
+            document.getElementById('tiempos-summary').style.display = 'block';
+        }
+
+        /**
+         * Calcular estadísticas de tiempos
+         */
+        function calculateTiemposStats(pedidos) {
+            if (pedidos.length === 0) return;
+
+            let totalRecorrido = 0;
+            let countRecorrido = 0;
+            let totalEspera = 0;
+            let countEspera = 0;
+            let totalEntrega = 0;
+            let countEntrega = 0;
+            let totalGeneral = 0;
+            let countGeneral = 0;
+
+            pedidos.forEach(pedido => {
+                // Tiempo de recorrido (desde inicio hasta llegada)
+                if (pedido.tiempo_inicio && pedido.tiempo_llegada) {
+                    totalRecorrido += (pedido.tiempo_llegada - pedido.tiempo_inicio);
+                    countRecorrido++;
+                }
+
+                // Tiempo de espera (desde llegada hasta entrega)
+                if (pedido.tiempo_llegada && pedido.tiempo_entrega) {
+                    totalEspera += (pedido.tiempo_entrega - pedido.tiempo_llegada);
+                    countEspera++;
+                }
+
+                // Tiempo de entrega (desde inicio hasta entrega final)
+                if (pedido.tiempo_inicio && pedido.tiempo_entrega) {
+                    totalEntrega += (pedido.tiempo_entrega - pedido.tiempo_inicio);
+                    countEntrega++;
+                }
+
+                // Tiempo total (desde aceptación hasta entrega)
+                if (pedido.tiempo_aceptacion && pedido.tiempo_entrega) {
+                    totalGeneral += (pedido.tiempo_entrega - pedido.tiempo_aceptacion);
+                    countGeneral++;
+                }
+            });
+
+            // Actualizar estadísticas
+            document.getElementById('stat-tiempo-recorrido').textContent =
+                countRecorrido > 0 ? formatDuration(totalRecorrido / countRecorrido) : '--';
+
+            document.getElementById('stat-tiempo-espera').textContent =
+                countEspera > 0 ? formatDuration(totalEspera / countEspera) : '--';
+
+            document.getElementById('stat-tiempo-entrega').textContent =
+                countEntrega > 0 ? formatDuration(totalEntrega / countEntrega) : '--';
+
+            document.getElementById('stat-tiempo-total').textContent =
+                countGeneral > 0 ? formatDuration(totalGeneral / countGeneral) : '--';
+
+            // Actualizar resumen
+            document.getElementById('summary-total-pedidos').textContent = pedidos.length;
+            document.getElementById('summary-pedidos-con-espera').textContent = countEspera;
+            document.getElementById('summary-pedidos-sin-espera').textContent = pedidos.length - countEspera;
+        }
+
+        /**
+         * Limpiar filtros de tiempos
+         */
+        function limpiarFiltrosTiempos() {
+            document.getElementById('filter-tiempos-fecha-inicio').value = '';
+            document.getElementById('filter-tiempos-fecha-fin').value = '';
+            document.getElementById('filter-tiempos-domiciliario').value = '';
+
+            document.getElementById('tiempos-stats-container').style.display = 'none';
+            document.getElementById('tiempos-summary').style.display = 'none';
+
+            const tbody = document.getElementById('tiempos-table-body');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 30px;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">⏱️</div>
+                        <h4 style="color: #666; margin-bottom: 10px;">Análisis de Tiempos de Espera</h4>
+                        <p>Selecciona un rango de fechas y opcionalmente un domiciliario para ver el análisis de tiempos.</p>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Event listeners para Tiempos de Espera
+        document.getElementById('btn-buscar-tiempos').addEventListener('click', buscarTiempos);
+        document.getElementById('btn-limpiar-tiempos').addEventListener('click', limpiarFiltrosTiempos);
+
+        // ============================================
         // MÓDULO DE CUADRE DE CAJA
         // ============================================
 
@@ -4291,6 +4652,7 @@
         document.getElementById('btn-limpiar-cuadre').addEventListener('click', limpiarCuadreCaja);
 
         loadUsers();
+        loadDomiciliariosForTiempos();
         
         // Restaurar el módulo activo al recargar la página
         function restoreActiveModule() {
