@@ -651,8 +651,20 @@
 
                 <div id="alert-container"></div>
 
-                <!-- Available Orders Section -->
-                <div id="available-orders-container">
+                <!-- Active Order Section (Mis Pedidos) -->
+                <div id="active-order-container" class="hidden">
+                    <h2 style="margin-bottom: 15px; color: #2c3e50;">📦 Pedido Activo</h2>
+
+                    <div class="timer-display">
+                        <div class="timer-label">⏱️ Tiempo Transcurrido</div>
+                        <div class="timer-value" id="timer-display">00:00:00</div>
+                    </div>
+
+                    <div id="active-order-card"></div>
+                </div>
+
+                <!-- Available Orders Section - OCULTA: Los pedidos se asignan desde Index -->
+                <div id="available-orders-container" style="display: none;">
                     <h2 style="margin-bottom: 15px; color: #2c3e50;">📋 Pedidos Disponibles</h2>
                     <div id="orders-list"></div>
                 </div>
@@ -681,6 +693,7 @@
                                     box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                             <div style="font-size: 11px; opacity: 0.9; margin-bottom: 5px;">💵 Efectivo Recaudado</div>
                             <div id="balance-efectivo" style="font-size: 20px; font-weight: bold;">$0</div>
+                            <div id="balance-efectivo-desglose" style="font-size: 9px; opacity: 0.7; margin-top: 3px;">Pedidos: $0 | Domicilios: $0</div>
                             <div id="balance-efectivo-cantidad" style="font-size: 10px; opacity: 0.8; margin-top: 5px;">0 pedidos</div>
                         </div>
                     </div>
@@ -706,6 +719,7 @@
                         <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">💳 Pagos con Datáfono</div>
                         <div id="balance-datafono-info" style="font-size: 13px; opacity: 0.9; margin-bottom: 5px;">Datáfono: --</div>
                         <div id="balance-tarjetas" style="font-size: 22px; font-weight: bold;">$0</div>
+                        <div id="balance-datafono-desglose" style="font-size: 9px; opacity: 0.7; margin-top: 5px;">Pedidos: $0 | Domicilios: $0</div>
                     </div>
 
                     <!-- Total General -->
@@ -718,18 +732,6 @@
                         <div id="balance-total-general" style="font-size: 28px; font-weight: bold;">$0</div>
                         <div style="font-size: 11px; opacity: 0.8; margin-top: 5px;">Efectivo + Datáfono</div>
                     </div>
-                </div>
-
-                <!-- Active Order Section -->
-                <div id="active-order-container" class="hidden">
-                    <h2 style="margin-bottom: 15px; color: #2c3e50;">📦 Pedido Activo</h2>
-
-                    <div class="timer-display">
-                        <div class="timer-label">⏱️ Tiempo Transcurrido</div>
-                        <div class="timer-value" id="timer-display">00:00:00</div>
-                    </div>
-
-                    <div id="active-order-card"></div>
                 </div>
             </div>
 
@@ -1936,27 +1938,35 @@
                     entregado: pedidosEntregados?.filter(p => p.estado === 'entregado').length || 0
                 });
 
-                // Calcular efectivo y datáfono
-                let efectivoRecaudado = 0;
-                let datafonoTotal = 0;
+                // Calcular efectivo y datáfono (VALOR PEDIDO + VALOR DOMICILIO)
+                let efectivoPedido = 0;
+                let efectivoDomicilio = 0;
+                let datafonoPedido = 0;
+                let datafonoDomicilio = 0;
                 let numeroDatafono = null;
                 let cantidadEfectivo = 0;
                 let cantidadDatafono = 0;
 
                 (pedidosEntregados || []).forEach(pedido => {
+                    const valorPedido = pedido.valor_pedido || 0;
                     const valorDomicilio = pedido.valor_domicilio || 0;
+                    const valorTotal = valorPedido + valorDomicilio;
 
                     console.log('💵 Procesando pedido:', {
                         id: pedido.id.substring(0, 8),
                         metodo_pago: pedido.metodo_pago,
-                        valor_domicilio: valorDomicilio
+                        valor_pedido: valorPedido,
+                        valor_domicilio: valorDomicilio,
+                        valor_total: valorTotal
                     });
 
                     if (pedido.metodo_pago === 'efectivo') {
-                        efectivoRecaudado += valorDomicilio;
+                        efectivoPedido += valorPedido;
+                        efectivoDomicilio += valorDomicilio;
                         cantidadEfectivo++;
                     } else if (pedido.metodo_pago === 'datafono') {
-                        datafonoTotal += valorDomicilio;
+                        datafonoPedido += valorPedido;
+                        datafonoDomicilio += valorDomicilio;
                         cantidadDatafono++;
                         if (pedido.numero_datafono && !numeroDatafono) {
                             numeroDatafono = pedido.numero_datafono;
@@ -1964,25 +1974,40 @@
                     }
                 });
 
+                // Calcular totales
+                const efectivoRecaudado = efectivoPedido + efectivoDomicilio;
+                const datafonoTotal = datafonoPedido + datafonoDomicilio;
                 const totalEfectivo = valorArranque + efectivoRecaudado;
                 const totalGeneral = totalEfectivo + datafonoTotal;
 
-                console.log('💰 Cuadre actualizado (mismo cálculo que Index):', {
+                console.log('💰 Cuadre actualizado (desglosado):', {
                     valorArranque,
-                    efectivoRecaudado,
-                    cantidadEfectivo,
+                    efectivo: {
+                        pedidos: efectivoPedido,
+                        domicilios: efectivoDomicilio,
+                        total: efectivoRecaudado,
+                        cantidad: cantidadEfectivo
+                    },
+                    datafono: {
+                        pedidos: datafonoPedido,
+                        domicilios: datafonoDomicilio,
+                        total: datafonoTotal,
+                        cantidad: cantidadDatafono
+                    },
                     totalEfectivo,
-                    datafonoTotal,
-                    cantidadDatafono,
                     totalGeneral
                 });
 
                 // Actualizar UI
                 document.getElementById('balance-arranque').textContent = formatCurrency(valorArranque);
                 document.getElementById('balance-efectivo').textContent = formatCurrency(efectivoRecaudado);
+                document.getElementById('balance-efectivo-desglose').textContent =
+                    `Pedidos: ${formatCurrency(efectivoPedido)} | Domicilios: ${formatCurrency(efectivoDomicilio)}`;
                 document.getElementById('balance-efectivo-cantidad').textContent = `${cantidadEfectivo} pedido${cantidadEfectivo !== 1 ? 's' : ''}`;
                 document.getElementById('balance-total-efectivo').textContent = formatCurrency(totalEfectivo);
                 document.getElementById('balance-tarjetas').textContent = formatCurrency(datafonoTotal);
+                document.getElementById('balance-datafono-desglose').textContent =
+                    `Pedidos: ${formatCurrency(datafonoPedido)} | Domicilios: ${formatCurrency(datafonoDomicilio)}`;
                 document.getElementById('balance-total-general').textContent = formatCurrency(totalGeneral);
 
                 // Actualizar info del datáfono con cantidad de pedidos
