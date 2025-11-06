@@ -1148,7 +1148,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Pedido</th>
+                                <th>ID</th>
                                 <th>Dirección</th>
                                 <th>Barrio</th>
                                 <th>Domiciliario</th>
@@ -4309,7 +4309,7 @@
 
                 return `
                     <tr>
-                        <td><strong>#${pedido.id.substring(0, 8)}</strong></td>
+                        <td style="font-family: monospace; font-size: 11px;"><strong>${pedido.id}</strong></td>
                         <td>${pedido.direccion || '--'}</td>
                         <td>${pedido.barrio || '--'}</td>
                         <td>${pedido.domiciliarios?.nombre || '--'}</td>
