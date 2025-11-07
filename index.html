@@ -1816,6 +1816,8 @@
                 const errores = [];
 
                 // Procesar cada domiciliario
+                const checkboxesConError = [];
+
                 checkboxes.forEach(checkbox => {
                     const driverId = checkbox.dataset.driverId;
                     const isChecked = checkbox.checked;
@@ -1829,6 +1831,7 @@
                     // Validar: Si está marcado pero no tiene valor de arranque
                     if (isChecked && valor === 0) {
                         errores.push(`${nombreDomiciliario}: No hay valor de arranque asignado. Por favor asignar un valor.`);
+                        checkboxesConError.push(checkbox);
                         return; // No procesar este domiciliario
                     }
 
@@ -1844,11 +1847,17 @@
                     });
                 });
 
-                // Si hay errores, mostrarlos y no guardar
+                // Si hay errores, desmarcar checkboxes con error, mostrar mensaje y no guardar
                 if (errores.length > 0) {
+                    // Desmarcar todos los checkboxes que tenían error
+                    checkboxesConError.forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+
                     const mensajeError = errores.join('\n');
                     showAlert('daily-config-alert', 'error', mensajeError);
                     console.error('❌ Errores de validación:', errores);
+                    console.log('🔄 Checkboxes desmarcados automáticamente');
                     return;
                 }
 
