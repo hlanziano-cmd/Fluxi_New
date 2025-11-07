@@ -1432,6 +1432,33 @@
             return hours > 0 ? hours + 'h ' + minutes + 'm' : minutes + 'm';
         }
 
+        /**
+         * Calcular tiempo total del pedido según su estado
+         * - Si está entregado: desde tiempo_aceptacion hasta tiempo_entrega
+         * - Si está cancelado: desde tiempo_aceptacion hasta updated_at (momento de cancelación)
+         * - Si está en curso: desde tiempo_aceptacion hasta ahora (tiempo en vivo)
+         */
+        function calculateOrderTime(order) {
+            if (!order.tiempo_aceptacion) return '--';
+
+            let endTime;
+            if (order.estado === 'entregado' && order.tiempo_entrega) {
+                // Pedido entregado: usar tiempo_entrega
+                endTime = order.tiempo_entrega;
+            } else if (order.estado === 'cancelado') {
+                // Pedido cancelado: usar updated_at como tiempo de cancelación
+                endTime = new Date(order.updated_at).getTime();
+            } else {
+                // Pedido en curso (asignado, en_camino): usar tiempo actual
+                endTime = Date.now();
+            }
+
+            const diff = endTime - order.tiempo_aceptacion;
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            return hours > 0 ? hours + 'h ' + minutes + 'm' : minutes + 'm';
+        }
+
         function sendWhatsAppNotification(phone, nombre, consecutivo) {
             const cleanPhone = phone.replace(/\D/g, '');
             const msg = `¡Hola ${nombre}! 🏍️\n\n` +
@@ -2123,7 +2150,7 @@
                     <td class="datafono-cell" style="text-align: center;"></td>
                     <td class="voucher-cell" style="text-align: center;"></td>
                     <td class="estado-cell" style="text-align: center;"></td>
-                    <td style="text-align: center;">${order.tiempo_aceptacion ? calculateElapsedTime(order.tiempo_aceptacion) : '--'}</td>
+                    <td style="text-align: center;">${calculateOrderTime(order)}</td>
                     <td class="actions-cell" style="text-align: center;"></td>
                 `;
 
@@ -2321,6 +2348,14 @@
                 if (newStatus === 'entregado') {
                     updateData.tiempo_entrega = Date.now();
 
+                    const order = allOrders.find(o => o.id === orderId);
+                    if (order && order.domiciliario_id) {
+                        await supabase.from('domiciliarios')
+                            .update({ estado: 'disponible' })
+                            .eq('id', order.domiciliario_id);
+                    }
+                } else if (newStatus === 'cancelado') {
+                    // Liberar domiciliario cuando se cancela un pedido
                     const order = allOrders.find(o => o.id === orderId);
                     if (order && order.domiciliario_id) {
                         await supabase.from('domiciliarios')
@@ -3700,7 +3735,7 @@
                     <td>${order.numero_datafono || '--'}</td>
                     <td>${order.metodo_pago === 'efectivo' ? 'Efectivo' : order.metodo_pago === 'datafono' ? 'Datáfono' : order.metodo_pago === 'rappi' ? 'Rappi' : '--'}</td>
                     <td></td>
-                    <td>${order.tiempo_aceptacion ? calculateElapsedTime(order.tiempo_aceptacion) : '--'}</td>
+                    <td>${calculateOrderTime(order)}</td>
                 `;
                 
                 const statusBadge = document.createElement('span');
@@ -3934,7 +3969,7 @@
                     <td style="text-align: center;">${order.numero_datafono || '--'}</td>
                     <td style="text-align: center;"></td>
                     <td style="text-align: center;"></td>
-                    <td style="text-align: center;">${order.tiempo_aceptacion ? calculateElapsedTime(order.tiempo_aceptacion) : '--'}</td>
+                    <td style="text-align: center;">${calculateOrderTime(order)}</td>
                 `;
 
                 // Estado Voucher
