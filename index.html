@@ -1760,7 +1760,8 @@
 
             drivers.forEach(driver => {
                 const config = dailyDriversConfig.find(c => c.domiciliario_id === driver.id);
-                const isActive = config ? true : false;
+                // Solo marcar como activo si existe config Y activo_hoy es true
+                const isActive = config && config.activo_hoy === true;
                 const valorArranque = config ? config.valor_arranque : '';
 
                 const row = tbody.insertRow();
