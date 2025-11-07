@@ -1,17 +1,20 @@
 -- Agregar columna activo_hoy a la tabla configuracion_diaria
 -- Esta columna determina si un domiciliario está disponible para asignar pedidos
 
--- 1. Agregar columna activo_hoy (boolean, default true)
+-- 1. Agregar columna activo_hoy (boolean, default false - NO DISPONIBLE por defecto)
 ALTER TABLE configuracion_diaria
-ADD COLUMN IF NOT EXISTS activo_hoy BOOLEAN DEFAULT true;
+ADD COLUMN IF NOT EXISTS activo_hoy BOOLEAN DEFAULT false;
 
 -- 2. Agregar comentario explicativo
-COMMENT ON COLUMN configuracion_diaria.activo_hoy IS 'Indica si el domiciliario está activo y disponible para asignar pedidos en este día';
+COMMENT ON COLUMN configuracion_diaria.activo_hoy IS 'Indica si el domiciliario está activo y disponible para asignar pedidos en este día. Por defecto false (No disponible)';
 
--- 3. Actualizar registros existentes para marcarlos como activos
--- (Asumimos que si ya existe un registro, el domiciliario estaba activo)
+-- 3. Actualizar registros existentes
+-- Los registros existentes se marcan como activos porque ya tienen valor_arranque configurado
 UPDATE configuracion_diaria
-SET activo_hoy = true
+SET activo_hoy = CASE
+    WHEN valor_arranque > 0 THEN true
+    ELSE false
+END
 WHERE activo_hoy IS NULL;
 
 -- 4. Verificar que la columna se creó correctamente

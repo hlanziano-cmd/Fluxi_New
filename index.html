@@ -1813,22 +1813,44 @@
                 const today = new Date().toISOString().split('T')[0];
                 const checkboxes = document.querySelectorAll('.daily-driver-checkbox');
                 const configData = [];
+                const errores = [];
 
-                // Procesar TODOS los domiciliarios (marcados y no marcados)
+                // Procesar cada domiciliario
                 checkboxes.forEach(checkbox => {
                     const driverId = checkbox.dataset.driverId;
-                    const isActive = checkbox.checked;
+                    const isChecked = checkbox.checked;
                     const valueInput = document.querySelector(`.daily-driver-value[data-driver-id="${driverId}"]`);
                     const valor = parseFormattedNumber(valueInput.value) || 0;
+
+                    // Obtener nombre del domiciliario desde el label
+                    const label = document.querySelector(`label[for="${checkbox.id}"]`);
+                    const nombreDomiciliario = label ? label.textContent.trim() : 'Domiciliario';
+
+                    // Validar: Si está marcado pero no tiene valor de arranque
+                    if (isChecked && valor === 0) {
+                        errores.push(`${nombreDomiciliario}: No hay valor de arranque asignado. Por favor asignar un valor.`);
+                        return; // No procesar este domiciliario
+                    }
+
+                    // Solo marcar como activo si tiene checkbox marcado Y tiene valor de arranque > 0
+                    const activoHoy = isChecked && valor > 0;
 
                     configData.push({
                         fecha: today,
                         domiciliario_id: driverId,
-                        activo_hoy: isActive,
+                        activo_hoy: activoHoy,
                         valor_arranque: valor,
                         created_at: new Date().toISOString()
                     });
                 });
+
+                // Si hay errores, mostrarlos y no guardar
+                if (errores.length > 0) {
+                    const mensajeError = errores.join('\n');
+                    showAlert('daily-config-alert', 'error', mensajeError);
+                    console.error('❌ Errores de validación:', errores);
+                    return;
+                }
 
                 console.log('💾 Guardando configuración diaria:', configData);
 
@@ -1846,7 +1868,7 @@
 
                 const activosCount = configData.filter(c => c.activo_hoy).length;
                 console.log(`✅ Configuración guardada: ${activosCount} activo(s), ${configData.length - activosCount} no disponible(s)`);
-                showAlert('daily-config-alert', 'success', `Configuración guardada: ${activosCount} domiciliario(s) activo(s)`);
+                showAlert('daily-config-alert', 'success', `Configuración guardada: ${activosCount} domiciliario(s) disponible(s) para asignar pedidos`);
 
                 // Recargar configuración
                 await loadDailyDriversConfig();
