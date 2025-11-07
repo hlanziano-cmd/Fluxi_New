@@ -496,7 +496,7 @@
                     <button class="btn btn-secondary btn-small" id="btn-refresh-map">🔄 Actualizar Mapa</button>
                 </div>
                 <div class="alert alert-info" style="margin-bottom: 15px;">
-                    📍 <strong>Actualización automática:</strong> Las ubicaciones se actualizan cada minuto automáticamente
+                    📍 <strong>Actualización en tiempo real:</strong> Las ubicaciones se actualizan cada 15 segundos automáticamente
                     <span id="map-last-update" style="display: block; margin-top: 5px; font-size: 12px;"></span>
                 </div>
                 <div id="map" style="height: 500px; border-radius: 8px;"></div>
@@ -1476,10 +1476,10 @@
                         initMap();
                         loadDeliveries();
                         loadDailyDriversConfig();
-                        // Actualizar mapa cada 1 minuto
+                        // Actualizar mapa cada 15 segundos para seguimiento en tiempo real
                         mapUpdateInterval = setInterval(() => {
                             loadDeliveries();
-                        }, 60000);
+                        }, 15000);
                     }, 100);
                 } else if (moduleName === 'pedidos') {
                     setTimeout(() => loadOrders(), 100);

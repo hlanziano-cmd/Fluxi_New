@@ -1335,17 +1335,16 @@
                     try {
                         const bgStatus = isAppInBackground ? '[BACKGROUND]' : '[FOREGROUND]';
                         console.log(`⏰ ${bgStatus} [INTERVALO] Ejecutando actualización automática...`);
-                        
-                        // 🔴 VERIFICACIÓN CRÍTICA: Solo actualizar si hay un pedido activo
-                        if (!activeOrder) {
-                            console.log(`ℹ️ ${bgStatus} [INTERVALO] No hay pedido activo, omitiendo actualización para ahorrar batería`);
-                            return;
+
+                        // Actualizar ubicación siempre que el tracking esté activo
+                        if (activeOrder) {
+                            console.log(`📍 ${bgStatus} [INTERVALO] Pedido activo #${activeOrder.id.substring(0, 8)} - Estado: ${activeOrder.estado}`);
+                        } else {
+                            console.log(`📍 ${bgStatus} [INTERVALO] Sin pedido activo - Actualizando ubicación en tiempo real`);
                         }
-                        
-                        console.log(`📍 ${bgStatus} [INTERVALO] Pedido activo #${activeOrder.id.substring(0, 8)} - Estado: ${activeOrder.estado}`);
-                        
+
                         await updateLocation();
-                        
+
                         if (isAppInBackground) {
                             backgroundUpdateCount++;
                             console.log(`✅ ${bgStatus} [INTERVALO] Actualización completada (${backgroundUpdateCount} en background)`);
@@ -1367,15 +1366,14 @@
                         try {
                             const bgStatus = isAppInBackground ? '[BACKGROUND]' : '[FOREGROUND]';
                             console.log(`🚶 ${bgStatus} [WATCHPOSITION] Cambio de posición detectado`);
-                            
-                            // 🔴 VERIFICACIÓN CRÍTICA: Solo actualizar si hay un pedido activo
-                            if (!activeOrder) {
-                                console.log(`ℹ️ ${bgStatus} [WATCHPOSITION] No hay pedido activo, omitiendo actualización`);
-                                return;
+
+                            // Actualizar ubicación siempre que el tracking esté activo
+                            if (activeOrder) {
+                                console.log(`📍 ${bgStatus} [WATCHPOSITION] Pedido activo #${activeOrder.id.substring(0, 8)} - Actualizando...`);
+                            } else {
+                                console.log(`📍 ${bgStatus} [WATCHPOSITION] Sin pedido activo - Actualizando ubicación en tiempo real`);
                             }
-                            
-                            console.log(`📍 ${bgStatus} [WATCHPOSITION] Pedido activo #${activeOrder.id.substring(0, 8)} - Actualizando...`);
-                            
+
                             const locationData = {
                                 lat: position.coords.latitude,
                                 lng: position.coords.longitude,
