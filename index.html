@@ -1896,13 +1896,22 @@
                 let query = supabase.from('pedidos').select('*');
 
                 if (resetTimestamp) {
+                    console.log(`🕒 Filtrando pedidos desde: ${new Date(resetTimestamp).toLocaleString('es-CO', { timeZone: 'America/Bogota' })}`);
                     query = query.gte('created_at', resetTimestamp);
+                } else {
+                    console.log('🕒 No hay timestamp de reinicio - cargando todos los pedidos');
                 }
 
                 const result = await query.order('created_at', { ascending: false });
                 allOrders = result.data || [];
 
-                console.log(`📦 Pedidos cargados desde ${resetTimestamp ? new Date(resetTimestamp).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : 'siempre'}: ${allOrders.length} pedido(s)`);
+                console.log(`📦 Pedidos cargados: ${allOrders.length} pedido(s)`);
+                if (allOrders.length > 0) {
+                    console.log('   - Últimos 3 pedidos:');
+                    allOrders.slice(0, 3).forEach((o, i) => {
+                        console.log(`   ${i + 1}. ID: ${o.id.substring(0, 8)}, Cliente: ${o.cliente}, Created: ${new Date(o.created_at).toLocaleString('es-CO')}, Estado: ${o.estado}`);
+                    });
+                }
 
                 // Actualizar indicador de fecha
                 await updateOrdersDateDisplay();
@@ -3161,12 +3170,15 @@
                     // Solo al crear un nuevo pedido, establecer estado como pendiente
                     orderData.estado = 'pendiente';
                     orderData.created_at = new Date().toISOString();
+                    console.log('📝 Creando nuevo pedido con datos:', orderData);
                     const { data, error } = await supabase.from('pedidos').insert([orderData]).select();
                     if (error) {
-                        console.error('Error detallado:', error);
+                        console.error('❌ Error detallado al crear pedido:', error);
                         throw error;
                     }
                     orderId = data[0].id;
+                    console.log('✅ Pedido creado exitosamente con ID:', orderId);
+                    console.log('   - created_at:', data[0].created_at);
                     showAlert('orders-alert', 'success', 'Pedido creado');
                 }
 
