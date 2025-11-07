@@ -1811,21 +1811,26 @@
         async function saveDailyDriversConfig() {
             try {
                 const today = new Date().toISOString().split('T')[0];
-                const checkboxes = document.querySelectorAll('.daily-driver-checkbox:checked');
+                const checkboxes = document.querySelectorAll('.daily-driver-checkbox');
                 const configData = [];
 
+                // Procesar TODOS los domiciliarios (marcados y no marcados)
                 checkboxes.forEach(checkbox => {
                     const driverId = checkbox.dataset.driverId;
+                    const isActive = checkbox.checked;
                     const valueInput = document.querySelector(`.daily-driver-value[data-driver-id="${driverId}"]`);
                     const valor = parseFormattedNumber(valueInput.value) || 0;
 
                     configData.push({
                         fecha: today,
                         domiciliario_id: driverId,
+                        activo_hoy: isActive,
                         valor_arranque: valor,
                         created_at: new Date().toISOString()
                     });
                 });
+
+                console.log('💾 Guardando configuración diaria:', configData);
 
                 // Eliminar configuración anterior del día
                 await supabase.from('configuracion_diaria').delete().eq('fecha', today);
@@ -1833,10 +1838,15 @@
                 // Insertar nueva configuración
                 if (configData.length > 0) {
                     const { error } = await supabase.from('configuracion_diaria').insert(configData);
-                    if (error) throw error;
+                    if (error) {
+                        console.error('❌ Error al insertar configuración:', error);
+                        throw error;
+                    }
                 }
 
-                showAlert('daily-config-alert', 'success', `Configuración guardada: ${configData.length} domiciliario(s) activo(s)`);
+                const activosCount = configData.filter(c => c.activo_hoy).length;
+                console.log(`✅ Configuración guardada: ${activosCount} activo(s), ${configData.length - activosCount} no disponible(s)`);
+                showAlert('daily-config-alert', 'success', `Configuración guardada: ${activosCount} domiciliario(s) activo(s)`);
 
                 // Recargar configuración
                 await loadDailyDriversConfig();
@@ -1845,7 +1855,7 @@
                 await loadOrders();
             } catch (error) {
                 console.error('Error al guardar configuración:', error);
-                showAlert('daily-config-alert', 'error', 'Error al guardar configuración');
+                showAlert('daily-config-alert', 'error', 'Error al guardar configuración: ' + error.message);
             }
         }
 
@@ -1920,20 +1930,25 @@
                 const today = new Date().toISOString().split('T')[0];
                 const { data: dailyConfig } = await supabase
                     .from('configuracion_diaria')
-                    .select('domiciliario_id')
-                    .eq('fecha', today);
+                    .select('domiciliario_id, activo_hoy, valor_arranque')
+                    .eq('fecha', today)
+                    .eq('activo_hoy', true);
+
+                console.log('📋 Configuración diaria cargada:', dailyConfig);
 
                 const activeDriverIds = dailyConfig ? dailyConfig.map(c => c.domiciliario_id) : [];
 
                 // Cargar solo domiciliarios activos del día, ordenados alfabéticamente
                 const deliveriesResult = await supabase.from('domiciliarios').select('*').order('nombre');
 
-                // Filtrar solo los domiciliarios activos del día
+                // Filtrar solo los domiciliarios activos del día (con activo_hoy = true)
                 if (activeDriverIds.length > 0) {
                     allDeliveryDrivers = (deliveriesResult.data || []).filter(d => activeDriverIds.includes(d.id));
+                    console.log(`✅ Domiciliarios disponibles para asignar: ${allDeliveryDrivers.length}`, allDeliveryDrivers.map(d => d.nombre));
                 } else {
-                    // Si no hay configuración del día, mostrar todos
-                    allDeliveryDrivers = deliveriesResult.data || [];
+                    // Si no hay configuración del día con activos, no mostrar ninguno
+                    allDeliveryDrivers = [];
+                    console.log('⚠️ No hay domiciliarios activos configurados para hoy');
                 }
 
                 renderOrders(allOrders);
