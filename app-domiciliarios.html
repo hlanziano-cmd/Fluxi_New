@@ -1887,19 +1887,38 @@
             `).join('');
         }
 
+        /**
+         * Obtener fecha actual en formato YYYY-MM-DD según hora de Colombia
+         */
+        function getTodayDateColombia() {
+            const formatter = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/Bogota',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            return formatter.format(new Date());
+        }
+
         async function updateStats() {
             // Calcular inicio del día laboral (8 AM hoy en Colombia)
             const ahora = new Date();
-            const today = new Date().toISOString().split('T')[0];
-            const inicioDiaLaboral = new Date(today + 'T08:00:00');
+            const today = getTodayDateColombia();
+            const inicioDiaLaboral = new Date(today + 'T08:00:00-05:00'); // Hora Colombia
 
             let fechaInicio;
             if (ahora < inicioDiaLaboral) {
                 // Antes de las 8 AM, usar 8 AM de ayer
-                const ayer = new Date(ahora);
+                const formatter = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'America/Bogota',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+                const ayer = new Date();
                 ayer.setDate(ayer.getDate() - 1);
-                const ayerStr = ayer.toISOString().split('T')[0];
-                fechaInicio = new Date(ayerStr + 'T08:00:00');
+                const ayerStr = formatter.format(ayer);
+                fechaInicio = new Date(ayerStr + 'T08:00:00-05:00');
             } else {
                 // Después de las 8 AM, usar 8 AM de hoy
                 fechaInicio = inicioDiaLaboral;
@@ -1942,14 +1961,14 @@
             if (!currentDelivery) return;
 
             try {
-                // Obtener fecha actual
+                // Obtener fecha actual en hora Colombia
                 const ahora = new Date();
-                const today = new Date().toISOString().split('T')[0];
+                const today = getTodayDateColombia();
 
-                // USAR EL MISMO RANGO QUE INDEX: Todo el día de 00:00 a 23:59
+                // USAR EL MISMO RANGO QUE INDEX: Todo el día de 00:00 a 23:59 (hora Colombia)
                 // Esto asegura que ambas apps muestren los mismos valores
-                const fechaInicio = new Date(today + 'T00:00:00');
-                const fechaFin = new Date(today + 'T23:59:59');
+                const fechaInicio = new Date(today + 'T00:00:00-05:00');
+                const fechaFin = new Date(today + 'T23:59:59-05:00');
                 const fechaConfiguracion = today;
 
                 console.log('📅 Rango de cuadre (igual que Index):', {

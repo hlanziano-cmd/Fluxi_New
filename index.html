@@ -1758,8 +1758,8 @@
 
                 if (driversError) throw driversError;
 
-                // Cargar configuración del día actual
-                const today = new Date().toISOString().split('T')[0];
+                // Cargar configuración del día actual (hora Colombia)
+                const today = getTodayDateColombia();
                 const { data: config, error: configError } = await supabase
                     .from('configuracion_diaria')
                     .select('*')
@@ -1838,7 +1838,7 @@
 
         async function saveDailyDriversConfig() {
             try {
-                const today = new Date().toISOString().split('T')[0];
+                const today = getTodayDateColombia();
                 const checkboxes = document.querySelectorAll('.daily-driver-checkbox');
                 const configData = [];
                 const errores = [];
@@ -1985,8 +1985,8 @@
                 // Actualizar indicador de fecha
                 await updateOrdersDateDisplay();
 
-                // Cargar configuración del día para filtrar domiciliarios activos
-                const today = new Date().toISOString().split('T')[0];
+                // Cargar configuración del día para filtrar domiciliarios activos (hora Colombia)
+                const today = getTodayDateColombia();
                 const { data: dailyConfig } = await supabase
                     .from('configuracion_diaria')
                     .select('domiciliario_id, activo_hoy, valor_arranque')
@@ -4128,6 +4128,21 @@
                 console.error('❌ Error al guardar hora de reinicio:', error);
                 showAlert('config-alert', 'error', 'Error al guardar configuración: ' + error.message);
             }
+        }
+
+        /**
+         * Obtener fecha actual en formato YYYY-MM-DD según hora de Colombia
+         */
+        function getTodayDateColombia() {
+            const formatter = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/Bogota',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+
+            // en-CA formatea como YYYY-MM-DD
+            return formatter.format(new Date());
         }
 
         /**
