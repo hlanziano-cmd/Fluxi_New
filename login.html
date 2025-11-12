@@ -237,13 +237,16 @@
         </div>
     </div>
 
-    <script src="config.js"></script>
+    <!-- Cargar librería de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // Configuración de Supabase
+        const SUPABASE_URL = 'https://kpqcqjhhqwezwvnzwnnb.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwcWNxamhocXdlend2bnp3bm5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg3NTExNTcsImV4cCI6MjA0NDMyNzE1N30.d-Fxly6Z8Xz-fAVIPL7CPb4s9hnVR8B70KZYqhHbzik';
+
         // Inicializar Supabase
-        const supabase = window.supabase.createClient(
-            window.fluxiConfig.supabaseUrl,
-            window.fluxiConfig.supabaseKey
-        );
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // Toggle visibilidad de contraseña
         document.getElementById('toggle-password').addEventListener('click', function() {
@@ -306,7 +309,7 @@
 
             try {
                 // Buscar usuario en la base de datos
-                const { data: usuarios, error } = await supabase
+                const { data: usuarios, error } = await supabaseClient
                     .from('usuarios')
                     .select('*')
                     .eq('email', email)
