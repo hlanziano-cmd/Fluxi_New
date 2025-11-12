@@ -1696,13 +1696,21 @@
                 const result = await supabase.from('usuarios').select('*').order('created_at', { ascending: false });
                 const tbody = document.getElementById('users-table-body');
                 tbody.innerHTML = '';
-                
+
                 if (!result.data || result.data.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;">No hay usuarios</td></tr>';
                     return;
                 }
-                
-                result.data.forEach(user => {
+
+                // Filtrar superusuarios (no mostrarlos en la lista)
+                const regularUsers = result.data.filter(user => !user.is_superuser);
+
+                if (regularUsers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;">No hay usuarios</td></tr>';
+                    return;
+                }
+
+                regularUsers.forEach(user => {
                     const row = tbody.insertRow();
                     row.innerHTML = `<td><strong>${user.nombre}</strong></td><td>${user.email}</td><td></td><td></td><td class="actions-cell"></td>`;
                     
