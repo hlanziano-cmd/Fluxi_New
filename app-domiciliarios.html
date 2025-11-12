@@ -19,7 +19,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1F2937 0%, #4F7BF7 100%);
             min-height: 100vh;
             padding: 0;
         }
@@ -28,16 +28,16 @@
             max-width: 500px;
             margin: 0 auto;
             min-height: 100vh;
-            background: white;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            background: #F8FAFB;
+            box-shadow: 0 0 20px rgba(31, 41, 55, 0.3);
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #4F7BF7;
             color: white;
             padding: 20px;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(79, 123, 247, 0.4);
         }
 
         .header h1 {
@@ -67,7 +67,7 @@
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            color: #2c3e50;
+            color: #1F2937;
             font-weight: 600;
             font-size: 14px;
         }
@@ -75,16 +75,18 @@
         .form-group input {
             width: 100%;
             padding: 15px;
-            border: 2px solid #ecf0f1;
+            border: 2px solid rgba(79, 123, 247, 0.2);
             border-radius: 10px;
             font-size: 16px;
             transition: all 0.3s;
+            color: #1F2937;
+            background: #FFFFFF;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #4F7BF7;
+            box-shadow: 0 0 0 3px rgba(79, 123, 247, 0.15);
         }
 
         .form-group input.error {
@@ -110,8 +112,9 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #4F7BF7;
             color: white;
+            box-shadow: 0 4px 12px rgba(79, 123, 247, 0.4);
         }
 
         .btn-primary:active {
@@ -129,24 +132,24 @@
         }
 
         .btn-warning {
-            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            background: #F97316;
             color: white;
             font-weight: bold;
-            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
             animation: pulse-warning 2s infinite;
         }
 
         @keyframes pulse-warning {
             0%, 100% {
-                box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+                box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
             }
             50% {
-                box-shadow: 0 4px 25px rgba(243, 156, 18, 0.7);
+                box-shadow: 0 4px 25px rgba(249, 115, 22, 0.7);
             }
         }
 
         .btn-warning:active {
-            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            background: #EA580C;
         }
 
         .btn-danger {
@@ -168,13 +171,15 @@
         }
 
         .status-bar {
-            background: #f8f9fa;
+            background: #FFFFFF;
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 12px;
             margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid rgba(79, 123, 247, 0.15);
+            box-shadow: 0 2px 6px rgba(79, 123, 247, 0.08);
         }
 
         .status-item {
@@ -183,14 +188,15 @@
 
         .status-item .label {
             font-size: 12px;
-            color: #7f8c8d;
+            color: #6B7280;
             margin-bottom: 5px;
+            font-weight: 600;
         }
 
         .status-item .value {
             font-size: 18px;
             font-weight: bold;
-            color: #2c3e50;
+            color: #4F7BF7;
         }
 
         .status-indicator {
@@ -218,41 +224,42 @@
         }
 
         .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border-left: 4px solid #17a2b8;
+            background: rgba(79, 123, 247, 0.1);
+            color: #1F2937;
+            border-left: 4px solid #4F7BF7;
         }
 
         .alert-success {
-            background: #d4edda;
+            background: rgba(39, 174, 96, 0.1);
             color: #155724;
-            border-left: 4px solid #28a745;
+            border-left: 4px solid #27ae60;
         }
 
         .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border-left: 4px solid #ffc107;
+            background: rgba(249, 115, 22, 0.1);
+            color: #c2410c;
+            border-left: 4px solid #F97316;
         }
 
         .alert-danger {
-            background: #f8d7da;
+            background: rgba(231, 76, 60, 0.1);
             color: #721c24;
-            border-left: 4px solid #dc3545;
+            border-left: 4px solid #e74c3c;
         }
 
         .order-card {
-            background: white;
-            border: 2px solid #ecf0f1;
+            background: #FFFFFF;
+            border: 2px solid rgba(79, 123, 247, 0.15);
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 10px rgba(79, 123, 247, 0.08);
         }
 
         .order-card.active {
-            border-color: #667eea;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border-color: #F97316;
+            background: #FFFFFF;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
         }
 
         .order-header {
