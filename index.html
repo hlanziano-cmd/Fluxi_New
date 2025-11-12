@@ -444,6 +444,14 @@
         <div class="sidebar-header">
             <h2>🚀 Fluxi</h2>
         </div>
+
+        <!-- Información del usuario logueado -->
+        <div style="padding: 15px 20px; background: rgba(255, 255, 255, 0.05); margin: 0 10px 20px; border-radius: 8px;">
+            <div style="font-size: 12px; opacity: 0.7; margin-bottom: 5px;">Sesión iniciada</div>
+            <div id="user-session-name" style="font-weight: 600; font-size: 14px;">Cargando...</div>
+            <div id="user-session-rol" style="font-size: 12px; opacity: 0.8; margin-top: 2px;"></div>
+        </div>
+
         <div class="menu-item active" data-module="usuarios">👥 Gestión de Usuarios</div>
         <div class="menu-item" data-module="domiciliarios">🏍️ Domiciliarios</div>
         <div class="menu-item" data-module="pedidos">📦 Pedidos</div>
@@ -452,6 +460,13 @@
         <div class="menu-item" data-module="cuadre-caja">💰 Cuadre de Caja</div>
         <div class="menu-item" data-module="tiempos-espera">⏱️ Tiempos de Espera</div>
         <div class="menu-item" data-module="configuracion">⚙️ Configuración</div>
+
+        <!-- Botón de cerrar sesión -->
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; background: rgba(0, 0, 0, 0.2); border-top: 1px solid rgba(255, 255, 255, 0.1);">
+            <button id="btn-logout" style="width: 100%; padding: 12px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #FCA5A5; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.3s;">
+                🚪 Cerrar Sesión
+            </button>
+        </div>
     </div>
 
     <div class="main-content">
@@ -1283,6 +1298,26 @@
                     <input type="tel" id="user-phone" value="+57" placeholder="+573001234567">
                 </div>
                 <div class="form-group">
+                    <label>Contraseña *</label>
+                    <div style="position: relative;">
+                        <input type="password" id="user-password" required minlength="6" placeholder="Mínimo 6 caracteres">
+                        <button type="button" id="toggle-password" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px;">
+                            👁️
+                        </button>
+                    </div>
+                    <small style="color: #666; font-size: 12px;">La contraseña debe tener al menos 6 caracteres</small>
+                </div>
+                <div class="form-group">
+                    <label>Verificar Contraseña *</label>
+                    <div style="position: relative;">
+                        <input type="password" id="user-password-confirm" required minlength="6" placeholder="Repite la contraseña">
+                        <button type="button" id="toggle-password-confirm" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px;">
+                            👁️
+                        </button>
+                    </div>
+                    <small id="password-match-message" style="font-size: 12px;"></small>
+                </div>
+                <div class="form-group">
                     <label>Rol *</label>
                     <select id="user-role" required>
                         <option value="">Seleccionar...</option>
@@ -1446,6 +1481,64 @@
         } catch (error) {
             console.error('Error al conectar con Supabase:', error);
         }
+
+        // ============================================
+        // SISTEMA DE AUTENTICACIÓN
+        // ============================================
+
+        // Verificar sesión al cargar la página
+        (function checkAuthentication() {
+            const session = localStorage.getItem('fluxi_session');
+
+            if (!session) {
+                // No hay sesión, redirigir a login
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const sessionData = JSON.parse(session);
+                const now = Date.now();
+
+                // Verificar si la sesión no ha expirado (24 horas)
+                if (!sessionData.timestamp || (now - sessionData.timestamp >= 86400000)) {
+                    // Sesión expirada
+                    localStorage.removeItem('fluxi_session');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // Sesión válida - mostrar información del usuario
+                document.getElementById('user-session-name').textContent = sessionData.nombre;
+                document.getElementById('user-session-rol').textContent = sessionData.rol.charAt(0).toUpperCase() + sessionData.rol.slice(1);
+
+                console.log('%c👤 Usuario autenticado:', 'color: green; font-weight: bold;', sessionData.nombre);
+
+            } catch (error) {
+                console.error('Error al verificar sesión:', error);
+                localStorage.removeItem('fluxi_session');
+                window.location.href = 'login.html';
+            }
+        })();
+
+        // Botón de cerrar sesión
+        document.getElementById('btn-logout').addEventListener('click', function() {
+            if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+                localStorage.removeItem('fluxi_session');
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Agregar efecto hover al botón de logout
+        document.getElementById('btn-logout').addEventListener('mouseenter', function() {
+            this.style.background = 'rgba(239, 68, 68, 0.25)';
+            this.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+        });
+
+        document.getElementById('btn-logout').addEventListener('mouseleave', function() {
+            this.style.background = 'rgba(239, 68, 68, 0.15)';
+            this.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        });
 
         let currentUserId = null;
         let currentDeliveryId = null;
@@ -1646,8 +1739,20 @@
             document.getElementById('user-name').value = user ? user.nombre : '';
             document.getElementById('user-email').value = user ? user.email : '';
             document.getElementById('user-phone').value = user && user.telefono ? user.telefono : '+57';
+            document.getElementById('user-password').value = user && user.password ? user.password : '';
+            document.getElementById('user-password-confirm').value = user && user.password ? user.password : '';
             document.getElementById('user-role').value = user ? user.rol : '';
             document.getElementById('user-status').value = user ? user.estado : 'activo';
+
+            // Si es edición, hacer las contraseñas opcionales
+            if (user) {
+                document.getElementById('user-password').removeAttribute('required');
+                document.getElementById('user-password-confirm').removeAttribute('required');
+            } else {
+                document.getElementById('user-password').setAttribute('required', 'required');
+                document.getElementById('user-password-confirm').setAttribute('required', 'required');
+            }
+
             document.getElementById('user-modal').classList.add('active');
         }
 
@@ -1676,10 +1781,26 @@
         document.getElementById('user-form').addEventListener('submit', async e => {
             e.preventDefault();
             if (!supabase) return;
-            
+
+            const password = document.getElementById('user-password').value.trim();
+            const passwordConfirm = document.getElementById('user-password-confirm').value.trim();
+
+            // Validar contraseñas solo si se están cambiando o es un nuevo usuario
+            if (password || passwordConfirm || !currentUserId) {
+                if (password !== passwordConfirm) {
+                    showAlert('users-alert', 'error', 'Las contraseñas no coinciden');
+                    return;
+                }
+
+                if (password.length < 6) {
+                    showAlert('users-alert', 'error', 'La contraseña debe tener al menos 6 caracteres');
+                    return;
+                }
+            }
+
             let telefono = document.getElementById('user-phone').value.trim();
             if (telefono === '+57') telefono = '';
-            
+
             const userData = {
                 nombre: document.getElementById('user-name').value.trim(),
                 email: document.getElementById('user-email').value.trim(),
@@ -1688,7 +1809,12 @@
                 estado: document.getElementById('user-status').value,
                 updated_at: new Date().toISOString()
             };
-            
+
+            // Solo agregar contraseña si se proporcionó
+            if (password) {
+                userData.password = password;
+            }
+
             try {
                 if (currentUserId) {
                     await supabase.from('usuarios').update(userData).eq('id', currentUserId);
@@ -3537,11 +3663,11 @@
                 cancelado: 'Cancelado' 
             };
             const statusColors = {
-                pendiente: '#8AABFB',  // Azul claro - del gradiente de cards
-                asignado: '#6B93F9',   // Azul medio - del gradiente de cards
-                en_camino: '#4F7BF7',  // Azul principal FluxiCloud
-                entregado: '#1F2937',  // Gris oscuro - del último gradiente
-                cancelado: '#F97316'   // Naranja FluxiCloud
+                pendiente: '#8AABFB',  // Azul claro - extremo del gradiente de cards (inicio)
+                asignado: '#6B93F9',   // Azul medio - card Ingresos por Pedido (asignado)
+                en_camino: '#4F7BF7',  // Azul principal - card Total Pedidos (en movimiento)
+                entregado: '#2DD4BF',  // Turquesa/verde azulado - éxito completado
+                cancelado: '#F87171'   // Rojo coral suave - error sin agresividad
             };
             
             // Contar pedidos por estado
@@ -3646,13 +3772,13 @@
             if (orderIncome > 0) {
                 labels.push('Ingresos por Pedido');
                 data.push(orderIncome);
-                colors.push('#6B93F9');  // Azul medio - del gradiente de cards
+                colors.push('#6B93F9');  // Azul medio - del centro del gradiente de card Ingresos por Pedido
             }
 
             if (deliveryIncome > 0) {
                 labels.push('Ingresos por Domicilio');
                 data.push(deliveryIncome);
-                colors.push('#F97316');  // Naranja FluxiCloud - del gradiente naranja
+                colors.push('#FB923C');  // Naranja - del extremo del gradiente de card Ingresos por Domicilio
             }
             
             incomeDistributionChart = new Chart(ctx, {
@@ -5123,6 +5249,61 @@
         document.getElementById('btn-close-descarga-modal').addEventListener('click', cerrarModalDescarga);
         document.getElementById('btn-cancelar-descarga').addEventListener('click', cerrarModalDescarga);
         document.getElementById('btn-confirmar-descarga').addEventListener('click', registrarDescargaCaja);
+
+        // ============================================
+        // TOGGLE VISIBILIDAD DE CONTRASEÑAS
+        // ============================================
+
+        // Toggle para contraseña
+        document.getElementById('toggle-password').addEventListener('click', function() {
+            const passwordInput = document.getElementById('user-password');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.textContent = type === 'password' ? '👁️' : '🙈';
+        });
+
+        // Toggle para confirmar contraseña
+        document.getElementById('toggle-password-confirm').addEventListener('click', function() {
+            const passwordInput = document.getElementById('user-password-confirm');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.textContent = type === 'password' ? '👁️' : '🙈';
+        });
+
+        // Validación en tiempo real de coincidencia de contraseñas
+        document.getElementById('user-password-confirm').addEventListener('input', function() {
+            const password = document.getElementById('user-password').value;
+            const passwordConfirm = this.value;
+            const message = document.getElementById('password-match-message');
+
+            if (passwordConfirm === '') {
+                message.textContent = '';
+                message.style.color = '';
+            } else if (password === passwordConfirm) {
+                message.textContent = '✓ Las contraseñas coinciden';
+                message.style.color = '#27ae60';
+            } else {
+                message.textContent = '✗ Las contraseñas no coinciden';
+                message.style.color = '#e74c3c';
+            }
+        });
+
+        document.getElementById('user-password').addEventListener('input', function() {
+            const password = this.value;
+            const passwordConfirm = document.getElementById('user-password-confirm').value;
+            const message = document.getElementById('password-match-message');
+
+            if (passwordConfirm === '') {
+                message.textContent = '';
+                message.style.color = '';
+            } else if (password === passwordConfirm) {
+                message.textContent = '✓ Las contraseñas coinciden';
+                message.style.color = '#27ae60';
+            } else {
+                message.textContent = '✗ Las contraseñas no coinciden';
+                message.style.color = '#e74c3c';
+            }
+        });
 
         loadUsers();
         loadDomiciliariosForTiempos();
